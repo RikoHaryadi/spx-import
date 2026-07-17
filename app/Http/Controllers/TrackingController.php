@@ -100,7 +100,7 @@ if (empty($orderId)) {
         fclose($file);
         // TrackingImport::import($file);
 
-StdSummaryService::sync();
+    StdSummaryService::sync();
 
         return back()->with(
             'success',

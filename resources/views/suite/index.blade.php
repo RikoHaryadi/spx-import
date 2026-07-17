@@ -1,62 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Import Data Suite</title>
+@extends('layouts.app')
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+@section('content')
 
-</head>
-<body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-
-    <div class="container-fluid">
-
-        <a class="navbar-brand fw-bold" href="#">
-            SPX STD Monitor
-        </a>
-
-        <button class="navbar-toggler"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#navbarNav">
-
-            <span class="navbar-toggler-icon"></span>
-
-        </button>
-
-        <div class="collapse navbar-collapse" id="navbarNav">
-
-            <ul class="navbar-nav me-auto">
-
-                <li class="nav-item">
-                    <a class="nav-link"
-                       href="{{ route('dashboard') }}">
-                        Dashboard
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link"
-                       href="{{ route('suite.index') }}">
-                        Import Suite
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link"
-                       href="{{ route('tracking.index') }}">
-                        Import Tracking
-                    </a>
-                </li>
-
-            </ul>
-
-        </div>
-
-    </div>
-
-</nav>
 
 <div class="container-fluid mt-4">
 
@@ -134,6 +80,4 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-</body>
-</html>
+@endsection
