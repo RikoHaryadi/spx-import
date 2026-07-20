@@ -1,5 +1,5 @@
 <?php
-
+throw new Exception('API FILE LOADED');
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\GoogleSheetController;
 

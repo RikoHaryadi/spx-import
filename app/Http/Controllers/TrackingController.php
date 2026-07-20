@@ -22,6 +22,51 @@ class TrackingController extends Controller
 
     public function import(Request $request)
     {
+        if ($request->isJson()) {
+
+    $rows = $request->input('data', []);
+
+    if (empty($rows)) {
+        return response()->json([
+            'success'=>false
+        ],400);
+    }
+
+    TrackingData::upsert(
+
+        $rows,
+
+        ['order_id'],
+
+        [
+
+            'driver_id',
+            'driver_name',
+            'received_time',
+            'current_station_received_time',
+            'delivering_time',
+            'delivered_time',
+            'on_hold_time',
+            'on_hold_reason',
+            'reschedule_date',
+            'status',
+            'order_account',
+            'payment_method',
+            'current_station',
+            'updated_at'
+
+        ]
+
+    );
+
+    \App\Jobs\SyncStdSummaryJob::dispatch();
+
+    return response()->json([
+        'success'=>true,
+        'rows'=>count($rows)
+    ]);
+
+}
         $request->validate([
             'file' => 'required|mimes:csv,txt'
         ]);
