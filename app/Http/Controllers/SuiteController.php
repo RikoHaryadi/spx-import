@@ -49,35 +49,48 @@ if (empty($rows)) {
 \Log::info('Jumlah data diterima : '.count($rows));
 \Log::info($rows[0]);
 
-        SuiteData::upsert(
+try {
 
-            $rows,
+    SuiteData::upsert(
 
-            ['shipment_id'],
+        $rows,
 
-            [
+        ['shipment_id'],
 
-                'date_id',
-                'lmhub_station_name',
-                'inbound_group',
-                'delivered_time',
-                'transported_time',
-                'assigned_delivering_time',
-                'on_hold_count',
-                'assigned_time',
-                'last_on_hold_timestamp',
-                'addr_zone_name',
-                'driver_id',
-                'within_cutoff_delivered',
-                'within_cutoff_assigned',
-                'within_assigned_delivering',
-                'is_lmhub_delivery_transfer',
-                'status',
-                'updated_at'
+        [
 
-            ]
+            'date_id',
+            'lmhub_station_name',
+            'inbound_group',
+            'delivered_time',
+            'transported_time',
+            'assigned_delivering_time',
+            'on_hold_count',
+            'assigned_time',
+            'last_on_hold_timestamp',
+            'addr_zone_name',
+            'driver_id',
+            'within_cutoff_delivered',
+            'within_cutoff_assigned',
+            'within_assigned_delivering',
+            'is_lmhub_delivery_transfer',
+            'status',
+            'updated_at'
 
-        );
+        ]
+
+    );
+
+} catch (\Throwable $e) {
+
+    \Log::error('========== UPSERT ERROR ==========');
+    \Log::error($e->getMessage());
+    \Log::error($e->getTraceAsString());
+    \Log::error($rows);
+
+    throw $e;
+
+}
 
         \App\Jobs\SyncStdSummaryJob::dispatch();
 
@@ -115,7 +128,10 @@ private function normalizeRows(array $rows): array
     $numericFields = [
         'on_hold_count',
     ];
-
+        // kolom boolean
+    $booleanFields = [
+        'is_lmhub_delivery_transfer',
+    ];
     // kolom tanggal
     $dateFields = [
         'delivered_time',
@@ -140,7 +156,22 @@ $row['updated_at'] = now();
                 $row[$field] = (int)$row[$field];
             }
         }
+      // boolean
+        foreach ($booleanFields as $field) {
 
+            if (!array_key_exists($field, $row)) {
+                $row[$field] = 0;
+            } else {
+
+                $value = strtolower(trim((string)$row[$field]));
+
+                $row[$field] = in_array($value, [
+                    'yes',
+                    'true',
+                    '1'
+                ]) ? 1 : 0;
+            }
+        }
         // tanggal
         foreach ($dateFields as $field) {
 
