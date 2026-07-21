@@ -20,7 +20,14 @@ class SuiteController extends Controller
 
    public function import(Request $request)
 {
-    /*
+    
+     \Log::info('=== SUITE IMPORT ===');
+    \Log::info([
+        'isJson' => $request->isJson(),
+        'contentType' => $request->header('Content-Type'),
+        'body' => $request->all(),
+    ]);
+/*
     |--------------------------------------------------------------------------
     | REQUEST DARI GOOGLE SHEET
     |--------------------------------------------------------------------------
