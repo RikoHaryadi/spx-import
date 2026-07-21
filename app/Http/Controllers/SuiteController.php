@@ -35,17 +35,19 @@ class SuiteController extends Controller
 
     if ($request->isJson()) {
 
-        $rows = $request->input('data', []);
+$rows = $request->input('data', []);
 
-        if (empty($rows)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tidak ada data'
-            ], 400);
-        }
-        $rows = $request->input('data', []);
+$rows = $this->normalizeRows($rows);
 
-\Log::info(json_encode($rows[0], JSON_PRETTY_PRINT));
+if (empty($rows)) {
+    return response()->json([
+        'success' => false,
+        'message' => 'Tidak ada data'
+    ],400);
+}
+
+\Log::info('Jumlah data diterima : '.count($rows));
+\Log::info($rows[0]);
 
         SuiteData::upsert(
 
@@ -105,6 +107,61 @@ class SuiteController extends Controller
             'Import berhasil. Total resi saat ini : '
             . number_format($total)
         );
+        
+}
+private function normalizeRows(array $rows): array
+{
+    // kolom angka
+    $numericFields = [
+        'on_hold_count',
+    ];
+
+    // kolom tanggal
+    $dateFields = [
+        'delivered_time',
+        'transported_time',
+        'assigned_delivering_time',
+        'assigned_time',
+        'last_on_hold_timestamp',
+    ];
+
+    foreach ($rows as &$row) {
+
+        // pastikan updated_at selalu ada
+        $row['created_at'] ??= now();
+$row['updated_at'] = now();
+
+        // angka
+        foreach ($numericFields as $field) {
+
+            if (!array_key_exists($field, $row) || trim((string)$row[$field]) === '') {
+                $row[$field] = 0;
+            } else {
+                $row[$field] = (int)$row[$field];
+            }
+        }
+
+        // tanggal
+        foreach ($dateFields as $field) {
+
+            if (!array_key_exists($field, $row) || trim((string)$row[$field]) === '') {
+                $row[$field] = null;
+            }
+        }
+
+        // text kosong → null
+        foreach ($row as $key => $value) {
+
+            if (is_string($value)) {
+
+                $value = trim($value);
+
+                $row[$key] = $value === '' ? null : $value;
+            }
+        }
+    }
+
+    return $rows;
 }
 
 }
