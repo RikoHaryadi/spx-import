@@ -43,6 +43,9 @@ class SuiteController extends Controller
                 'message' => 'Tidak ada data'
             ], 400);
         }
+        $rows = $request->input('data', []);
+
+\Log::info(json_encode($rows[0], JSON_PRETTY_PRINT));
 
         SuiteData::upsert(
 
