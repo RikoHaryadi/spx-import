@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+        'import' => [
+        'api_key' => env('IMPORT_API_KEY'),
+    ],
+
 ];

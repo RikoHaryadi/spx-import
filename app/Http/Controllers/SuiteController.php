@@ -20,9 +20,9 @@ class SuiteController extends Controller
 
    public function import(Request $request)
 {
-    \Log::info('=== API DEBUG ===', [
+\Log::info('=== API DEBUG ===', [
     'header_api_key' => $request->header('X-API-KEY'),
-    'env_api_key'    => env('IMPORT_API_KEY'),
+    'config_api_key' => config('services.import.api_key'),
     'content_type'   => $request->header('Content-Type'),
     'is_json'        => $request->isJson(),
 ]);
@@ -39,7 +39,7 @@ if ($request->isJson()) {
      // Khusus request dari Google Apps Script (JSON)
     if ($request->isJson()) {
 
-        if ($request->header('X-API-KEY') !== env('IMPORT_API_KEY')) {
+       if ($request->header('X-API-KEY') !== config('services.import.api_key')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized'
