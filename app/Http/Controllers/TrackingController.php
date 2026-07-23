@@ -62,7 +62,7 @@ class TrackingController extends Controller
     $row['created_at'] = now();
     $row['updated_at'] = now();
 }
-\Log::info('Tracking setelah normalisasi');
+\Log::info('=== TRACKING AFTER NORMALIZE ===');
 \Log::info($rows[0]);
     TrackingData::upsert(
 
