@@ -24,3 +24,6 @@ Route::get('/dashboard/detail', [DashboardController::class, 'detail'])
 
 Route::get('/performance/kurir', [DashboardController::class, 'kurirPerformance'])
     ->name('performance.kurirPerformance');
+Route::get('/', function () {
+    return redirect()->route('dashboard');
+});
