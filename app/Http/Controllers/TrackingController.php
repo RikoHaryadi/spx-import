@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Models\TrackingData;
 use App\Services\StdSummaryService;
@@ -31,7 +31,39 @@ class TrackingController extends Controller
             'success'=>false
         ],400);
     }
+    foreach ($rows as &$row) {
 
+    $row['received_time'] =
+        $this->normalizeDate($row['received_time'] ?? null);
+
+    $row['current_station_received_time'] =
+        $this->normalizeDate($row['current_station_received_time'] ?? null);
+
+    $row['delivering_time'] =
+        $this->normalizeDate($row['delivering_time'] ?? null);
+
+    $row['delivered_time'] =
+        $this->normalizeDate($row['delivered_time'] ?? null);
+
+    $row['on_hold_time'] =
+        $this->normalizeDate($row['on_hold_time'] ?? null);
+
+    $row['reschedule_date'] =
+        $this->normalizeDate($row['reschedule_date'] ?? null);
+
+    // kosongkan string kosong
+    foreach ($row as $key => $value) {
+        if (is_string($value)) {
+            $value = trim($value);
+            $row[$key] = $value === '' ? null : $value;
+        }
+    }
+
+    $row['created_at'] = now();
+    $row['updated_at'] = now();
+}
+\Log::info('Tracking setelah normalisasi');
+\Log::info($rows[0]);
     TrackingData::upsert(
 
         $rows,
@@ -171,5 +203,36 @@ return redirect()
     }
 
     return $value;
+}
+
+private function normalizeDate($value)
+{
+    if ($value === null) {
+        return null;
+    }
+
+    $value = trim((string) $value);
+
+    if ($value === '' || $value === '0') {
+        return null;
+    }
+
+    $formats = [
+        'd/m/Y H:i',
+        'd/m/Y H:i:s',
+        'Y-m-d H:i',
+        'Y-m-d H:i:s',
+    ];
+
+    foreach ($formats as $format) {
+        try {
+            return Carbon::createFromFormat($format, $value)
+                ->format('Y-m-d H:i:s');
+        } catch (\Exception $e) {
+            // coba format berikutnya
+        }
+    }
+
+    return null;
 }
 }

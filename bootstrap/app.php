@@ -25,5 +25,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
 
     })
+    ->withMiddleware(function ($middleware) {
+    $middleware->alias([
+        'apikey' => \App\Http\Middleware\CheckApiKey::class,
+    ]);
+})
 
     ->create();
