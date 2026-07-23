@@ -91,17 +91,18 @@ $topHub = $data
             $join->on('s.driver_id', '=', 'd.driver_id');
         })
 
-        ->select(
-            's.shipment_id',
-            's.date_id',
-            's.lmhub_station_name',
-            's.driver_id',
-            'd.driver_name',
-            't.status',
-            't.on_hold_reason',
-            't.payment_method',
-            't.order_account'
-        )
+->select(
+    's.shipment_id',
+    's.date_id',
+    's.lmhub_station_name',
+    's.driver_id',
+    's.assigned_time',      // Tambahkan ini
+    'd.driver_name',
+    't.status',
+    't.on_hold_reason',
+    't.payment_method',
+    't.order_account'
+)
 
         ->where('s.date_id', $date)
         ->where('s.lmhub_station_name', $hub)
@@ -115,11 +116,17 @@ $topHub = $data
         ->whereNull('s.delivered_time')
         ->orderBy('d.driver_name')
         ->paginate(100);
+   foreach ($data as $row) {
 
-    return view(
-        'dashboard.detail',
-        compact('data', 'date', 'hub')
-    );
+    $row->display_reason = empty($row->assigned_time)
+        ? 'Stuck Received'
+        : ($row->on_hold_reason ?: '-');
+}
+
+return view(
+    'dashboard.detail',
+    compact('data', 'date', 'hub')
+);
 }
 public function kurirPerformance(Request $request)
 {

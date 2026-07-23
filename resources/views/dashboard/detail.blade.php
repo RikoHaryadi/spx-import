@@ -73,7 +73,7 @@
 
                             <td>{{ $row->status }}</td>
 
-                            <td>{{ $row->on_hold_reason }}</td>
+                           <td>{{ $row->display_reason }}</td>
 
                             <td>{{ $row->payment_method }}</td>
 
