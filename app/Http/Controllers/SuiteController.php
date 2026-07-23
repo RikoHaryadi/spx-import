@@ -124,6 +124,8 @@ try {
     |--------------------------------------------------------------------------
     */
 
+   try {
+
     Excel::import(
         new SuiteImport,
         $request->file('file')
@@ -138,6 +140,21 @@ try {
             'Import berhasil. Total resi saat ini : '
             . number_format($total)
         );
+
+} catch (\Illuminate\Database\QueryException $e) {
+
+    if ($e->getCode() == 23000) {
+
+        return redirect()
+            ->route('suite.index')
+            ->with(
+                'error',
+                'Import dibatalkan. Terdapat Shipment ID yang sudah ada di database.'
+            );
+    }
+
+    throw $e;
+}
         
 }
 private function normalizeRows(array $rows): array
