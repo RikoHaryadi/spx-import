@@ -235,4 +235,5 @@ private function normalizeDate($value)
 
     return null;
 }
+
 }

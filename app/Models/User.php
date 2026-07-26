@@ -18,11 +18,23 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
-    protected $fillable = [
-        'name',
-        'email',
-        'password',
-    ];
+    protected $fillable=[
+
+    'nik',
+
+    'name',
+
+    'email',
+
+    'password',
+
+    'hub_id',
+
+    'role',
+
+    'is_active'
+
+];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -46,4 +58,13 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    public function hub()
+{
+    return $this->belongsTo(Hub::class);
+}
+public function users()
+{
+    return $this->hasMany(User::class);
+}
+
 }

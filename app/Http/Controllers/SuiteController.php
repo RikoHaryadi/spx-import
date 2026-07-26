@@ -54,8 +54,9 @@ class SuiteController extends Controller
     if ($request->isJson()) {
 
 $rows = $request->input('data', []);
-
+dd(array_keys($rows[0]), $rows[0]);
 $rows = $this->normalizeRows($rows);
+dd($rows[0]);
 
 if (empty($rows)) {
     return response()->json([
@@ -74,6 +75,7 @@ try {
         $rows,
 
         ['shipment_id'],
+        
 
         [
 
@@ -164,9 +166,17 @@ private function normalizeRows(array $rows): array
         'on_hold_count',
     ];
         // kolom boolean
-    $booleanFields = [
-        'is_lmhub_delivery_transfer',
-    ];
+$booleanFields = [
+
+    'is_lmhub_delivery_transfer',
+
+    'within_cutoff_delivered',
+
+    'within_cutoff_assigned',
+
+    'within_assigned_delivering',
+
+];
     // kolom tanggal
     $dateFields = [
         'delivered_time',
@@ -198,13 +208,18 @@ $row['updated_at'] = now();
                 $row[$field] = 0;
             } else {
 
-                $value = strtolower(trim((string)$row[$field]));
+                $value = strtolower(trim((string) $row[$field]));
 
-                $row[$field] = in_array($value, [
-                    'yes',
-                    'true',
-                    '1'
-                ]) ? 1 : 0;
+$row[$field] = match ($value) {
+
+    'yes',
+    'true',
+    '1',
+    'y' => 1,
+
+    default => 0,
+
+};
             }
         }
         // tanggal

@@ -50,14 +50,17 @@ class SuiteImport implements
 
         'driver_id' => $row['driver_id'] ?? null,
 
-        'within_cutoff_delivered' => $row['within_cutoff_delivered'] ?? null,
+'within_cutoff_delivered' =>
+    $this->yesNoToBool($row['within_cutoff_delivered'] ?? null),
 
-        'within_cutoff_assigned' => $row['within_cutoff_assigned'] ?? null,
+'within_cutoff_assigned' =>
+    $this->yesNoToBool($row['within_cutoff_assigned'] ?? null),
 
-        'within_assigned_delivering' => $row['within_assigned_delivering'] ?? null,
+'within_assigned_delivering' =>
+    $this->yesNoToBool($row['within_assigned_delivering'] ?? null),
 
-        'is_lmhub_delivery_transfer' =>
-            strtolower($row['is_lmhub_delivery_transfer'] ?? '') == 'yes' ? 1 : 0,
+'is_lmhub_delivery_transfer' =>
+    $this->yesNoToBool($row['is_lmhub_delivery_transfer'] ?? null),
 
         'status' => $row['status'] ?? null,
     ]);
@@ -65,6 +68,7 @@ class SuiteImport implements
 
     private function emptyToNull($value)
     {
+        
         $value = trim((string)$value);
 
         if ($value === '') {
@@ -83,4 +87,26 @@ class SuiteImport implements
     {
         return 1000;
     }
+   private function yesNoToBool($value)
+{
+    $value = strtolower(trim((string)$value));
+
+    if ($value === 'yes') {
+        return 1;
+    }
+
+    if ($value === 'no') {
+        return 0;
+    }
+
+    if ($value === '1') {
+        return 1;
+    }
+
+    if ($value === '0') {
+        return 0;
+    }
+
+    return null;
+}
 }
