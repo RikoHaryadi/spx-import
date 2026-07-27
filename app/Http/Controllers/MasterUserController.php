@@ -25,54 +25,54 @@ class MasterUserController extends Controller
         ));
     }
 
-       public function store(Request $request)
-    {
-        $request->validate([
+   public function store(Request $request)
+{
+    $request->validate([
 
-            'nik'=>'required|unique:users',
+        'nik' => 'required|unique:users',
 
-            'name'=>'required',
+        'name' => 'required',
 
-            'email'=>[
-                'required',
-                'email',
-                'unique:users',
-                'regex:/@spxexpress\.com$/'
-            ],
+        'email' => [
+            'required',
+            'email',
+            'unique:users',
+            'regex:/@spxexpress\.com$/'
+        ],
 
-            'password'=>'required|min:6',
+        'password' => 'required|min:6',
 
-            'hub_id'=>'required|exists:hubs,id',
+        'hub_id' => 'required|exists:hubs,id',
 
-            'role'=>'required'
+        'role' => 'required'
 
-        ],[
-            'email.regex'=>'Gunakan email kantor @spxexpress.com'
-        ]);
+    ],[
+        'email.regex' => 'Gunakan email kantor @spxexpress.com'
+    ]);
 
-        User::create([
+    User::create([
 
-            'nik'=>$request->nik,
+        'nik' => $request->nik,
 
-            'name'=>$request->name,
+        'name' => $request->name,
 
-            'email'=>strtolower($request->email),
+        'email' => strtolower($request->email),
 
-            'password'=>Hash::make($request->password),
+        'password' => Hash::make($request->password),
 
-            'hub_id'=>$request->hub_id,
+        'hub_id' => $request->hub_id,
 
-            'role'=>$request->role,
+        'role' => $request->role,
 
-            'is_active'=>1
+        'is_active' => 1
 
-        ]);
+    ]);
 
-        return back()->with(
-            'success',
-            'User berhasil ditambahkan.'
-        );
-    }
+    return back()->with(
+        'success',
+        'User berhasil ditambahkan.'
+    );
+}
     public function update(Request $request,User $user)
     {
 
@@ -94,6 +94,10 @@ class MasterUserController extends Controller
             'role'=>'required'
 
         ],[
+                'nik.required' => 'NIK wajib diisi.',
+    'nik.unique' => 'NIK sudah digunakan.',
+    'email.required' => 'Email wajib diisi.',
+    'email.unique' => 'Email sudah digunakan.',
             'email.regex'=>'Gunakan email kantor @spxexpress.com'
         ]);
 
@@ -109,7 +113,15 @@ class MasterUserController extends Controller
                 Hash::make($request->password);
         }
 
-        $user->save();
+        $user->hub_id = $request->hub_id;
+$user->role = $request->role;
+$user->is_active = $request->is_active;
+
+if ($request->filled('password')) {
+    $user->password = Hash::make($request->password);
+}
+
+$user->save();
 
         return back()->with(
             'success',

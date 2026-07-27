@@ -28,8 +28,31 @@
         </button>
 
     </div>
+@if ($errors->any())
 
+<div class="alert alert-danger">
+
+    <strong>Terjadi kesalahan:</strong>
+
+    <ul class="mb-0">
+        @foreach ($errors->all() as $error)
+            <li>{{ $error }}</li>
+        @endforeach
+    </ul>
+
+</div>
+
+@endif
 @if(session('success'))
+@if ($errors->any())
+<div class="alert alert-danger">
+    <ul class="mb-0">
+        @foreach ($errors->all() as $error)
+            <li>{{ $error }}</li>
+        @endforeach
+    </ul>
+</div>
+@endif
 
 <div class="alert alert-success">
 
@@ -303,10 +326,8 @@ class="form-select">
 
 <div class="modal-footer">
 
-<button class="btn btn-primary">
-
-Simpan
-
+<button type="submit" class="btn btn-primary">
+    Simpan
 </button>
 
 </div>

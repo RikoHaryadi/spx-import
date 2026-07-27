@@ -216,6 +216,38 @@
         <small class="text-muted d-block">
             📍 {{ Auth::user()->hub->hub_name ?? '-' }}
         </small>
+        <div style="background:yellow;padding:5px">
+Role : {{ Auth::user()->role }} <br>
+Jumlah Hub :
+{{ isset($contextHubs) ? $contextHubs->count() : 'contextHubs TIDAK ADA' }}
+</div>
+        @if(strtolower(trim(Auth::user()->role)) == 'owner')
+
+<form action="{{ route('context.hub') }}" method="POST" class="mt-2">
+    @csrf
+
+    <select
+        name="hub_id"
+        class="form-select form-select-sm"
+        onchange="this.form.submit()">
+
+        <option value="">
+            🌐 Semua Hub
+        </option>
+
+        @foreach($contextHubs as $hub)
+            <option
+                value="{{ $hub->id }}"
+                {{ session('context_hub_id') == $hub->id ? 'selected' : '' }}>
+                {{ $hub->hub_name }}
+            </option>
+        @endforeach
+
+    </select>
+
+</form>
+
+@endif
 
         <span class="badge bg-success">
             ● Online
