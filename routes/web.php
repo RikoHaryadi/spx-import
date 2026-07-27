@@ -9,6 +9,19 @@ use App\Http\Controllers\MonitoringStdController;
 use App\Http\Controllers\HubController;
 use App\Http\Controllers\MasterUserController;
 use App\Http\Controllers\ContexHubController;
+use Illuminate\Http\Request;
+Route::get('/ping', function (Request $request) {
+
+    if ($request->header('X-API-KEY') !== env('API_KEY')) {
+        return response()->json([
+            'status' => 'unauthorized'
+        ], 401);
+    }
+
+    return response()->json([
+        'status' => 'ok'
+    ]);
+});
 
     Route::post('/suite/import', [SuiteController::class,'import'])
         ->name('suite.import');
