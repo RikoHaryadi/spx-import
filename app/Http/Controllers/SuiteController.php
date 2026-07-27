@@ -29,15 +29,25 @@ class SuiteController extends Controller
 
 
      // Khusus request dari Google Apps Script (JSON)
-    if ($request->isJson()) {
+if ($request->isJson()) {
 
-       if ($request->header('X-API-KEY') !== config('services.import.api_key')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized'
-            ], 401);
-        }
+    \Log::info('=== API DEBUG ===', [
+        'header_api_key' => $request->header('X-API-KEY'),
+        'config_api_key' => config('services.import.api_key'),
+        'is_json'        => $request->isJson(),
+        'all_headers'    => $request->headers->all(),
+    ]);
+
+    if ($request->header('X-API-KEY') !== config('services.import.api_key')) {
+
+        \Log::warning('API KEY TIDAK COCOK');
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthorized'
+        ], 401);
     }
+}
     
      \Log::info('=== SUITE IMPORT ===');
     \Log::info([
@@ -53,10 +63,7 @@ class SuiteController extends Controller
 
     if ($request->isJson()) {
 
-$rows = $request->input('data', []);
-dd(array_keys($rows[0]), $rows[0]);
-$rows = $this->normalizeRows($rows);
-dd($rows[0]);
+
 
 if (empty($rows)) {
     return response()->json([
@@ -71,6 +78,7 @@ if (empty($rows)) {
 try {
 
     SuiteData::upsert(
+        
 
         $rows,
 
@@ -100,6 +108,7 @@ try {
         ]
 
     );
+    \Log::info('UPSERT BERHASIL');
 
 } catch (\Throwable $e) {
 
@@ -113,6 +122,7 @@ try {
 }
 
         \App\Jobs\SyncStdSummaryJob::dispatch();
+        \Log::info('RETURN JSON BERHASIL');
 
         return response()->json([
             'success' => true,
