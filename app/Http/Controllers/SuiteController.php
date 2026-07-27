@@ -30,6 +30,7 @@ class SuiteController extends Controller
 
      // Khusus request dari Google Apps Script (JSON)
 if ($request->isJson()) {
+    
 
     \Log::info('=== API DEBUG ===', [
         'header_api_key' => $request->header('X-API-KEY'),
@@ -63,7 +64,9 @@ if ($request->isJson()) {
 
     if ($request->isJson()) {
 
+    $rows = $request->input('data', []);
 
+    $rows = $this->normalizeRows($rows);
 
 if (empty($rows)) {
     return response()->json([
