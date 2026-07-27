@@ -10,6 +10,13 @@ use App\Http\Controllers\HubController;
 use App\Http\Controllers\MasterUserController;
 use App\Http\Controllers\ContexHubController;
 
+    Route::post('/suite/import', [SuiteController::class,'import'])
+        ->name('suite.import');
+
+    Route::post('/tracking/import', [TrackingController::class,'import'])
+    ->name('tracking.import');
+
+
 
 Auth::routes();
 
@@ -28,14 +35,13 @@ Route::middleware(['auth','active'])->group(function () {
     Route::get('/suite', [SuiteController::class,'index'])
         ->name('suite.index');
 
-    Route::post('/suite/import', [SuiteController::class,'import'])
-        ->name('suite.import');
+    Route::post('/monitoring-std/import',[MonitoringStdController::class,'import'])
+        ->name('monitoring.import');
 
     Route::get('/tracking', [TrackingController::class,'index'])
         ->name('tracking.index');
 
-    Route::post('/tracking/import', [TrackingController::class,'import'])
-        ->name('tracking.import');
+
 
     Route::get('/performance/kurir',[DashboardController::class,'kurirPerformance'])
         ->name('performance.index');
@@ -43,8 +49,7 @@ Route::middleware(['auth','active'])->group(function () {
     Route::get('/monitoring-std',[MonitoringStdController::class,'index'])
         ->name('monitoring.index');
 
-    Route::post('/monitoring-std/import',[MonitoringStdController::class,'import'])
-        ->name('monitoring.import');
+
 
     Route::delete('/monitoring-std/reset',[MonitoringStdController::class,'reset'])
         ->name('monitoring.reset');
