@@ -223,13 +223,14 @@
 
                 <div class="card-body text-center">
 
-                    <h6>Progress</h6>
+                  <h6 class="mb-2">Pencapaian Pengiriman</h6>
 
-                    <h2 class="text-info">
 
-                        {{ number_format($summary['progress'],1) }}%
+                        <h2 class="text-info">
 
-                    </h2>
+                            {{ number_format($summary['achievement'],2) }}%
+
+                        </h2>
 
                 </div>
 
@@ -254,7 +255,7 @@
 
                      style="width:{{ $summary['progress'] }}%">
 
-                    {{ number_format($summary['progress'],1) }}%
+                    {{ number_format($summary['progress'],2) }}%
 
                 </div>
 

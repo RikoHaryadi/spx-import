@@ -58,9 +58,25 @@ $summary = [
 
     'remaining' => $drivers->sum('remaining'),
 
-    'progress' => $drivers->count()
-    ? round($drivers->avg('progress'), 2)
-    : 0,
+    // Progress Pengantaran
+    'progress' => $drivers->sum('total') > 0
+        ? round(
+            (
+                $drivers->sum('delivered') +
+                $drivers->sum('onhold')
+            ) / $drivers->sum('total') * 100,
+            2
+        )
+        : 0,
+
+    // Pencapaian Keberhasilan Pengiriman
+    'achievement' => $drivers->sum('total') > 0
+        ? round(
+            $drivers->sum('delivered') /
+            $drivers->sum('total') * 100,
+            2
+        )
+        : 0,
 
 ];
 $topDrivers = $drivers
