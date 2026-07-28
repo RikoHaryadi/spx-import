@@ -303,15 +303,35 @@ public function driverDetail($driverId)
     // Query untuk tabel (boleh difilter)
     $query = clone $baseQuery;
 
-    if (request('status')) {
+   if (request('status')) {
+
+    if (strtolower(request('status')) == 'on hold') {
+
+        $query->where(function ($q) {
+
+            $q->whereRaw("LOWER(status) LIKE '%hold%'")
+              ->orWhere(function ($q2) {
+
+                    $q2->whereRaw("LOWER(status) = 'lmhub_received'")
+                       ->whereNotNull('on_hold_reason')
+                       ->where('on_hold_reason','!=','');
+
+              });
+
+        });
+
+    } else {
+
         $query->where('status', request('status'));
+
     }
 
+}
     if (request('payment') == 'COD') {
         $query->where('payment_method', 'COD');
     }
 
-    if (request('payment') == 'NONCOD') {
+    if (strtoupper(request('payment')) == 'NONCOD') {
         $query->where('payment_method', '!=', 'COD');
     }
 
@@ -321,15 +341,34 @@ public function driverDetail($driverId)
 
     $driver = $allRows->first();
 
-    $summary = [
+$summary = [
 
-        'total' => $allRows->count(),
+    'total' => $allRows->count(),
 
-        'delivered' => $allRows->where('status', 'Delivered')->count(),
+    'delivered' => $allRows->filter(function ($row) {
+        return strtolower(trim($row->status)) == 'delivered';
+    })->count(),
 
-        'onhold' => $allRows->where('status', 'On Hold')->count(),
+    'onhold' => $allRows->filter(function ($row) {
 
-    ];
+        $status = strtolower(trim($row->status));
+
+        return
+            str_contains($status,'hold')
+
+            ||
+
+            (
+
+                $status == 'lmhub_received'
+
+                && !empty(trim($row->on_hold_reason))
+
+            );
+
+    })->count(),
+
+];
 
     $summary['cod'] =
         $allRows->where('payment_method','COD')->count();

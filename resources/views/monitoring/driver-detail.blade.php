@@ -286,15 +286,17 @@ placeholder="Cari Order ID...">
 
 <tr>
 
-<th>No</th>
+<th width="60">No</th>
 
 <th>Order ID</th>
 
 <th>Status</th>
 
+<th>On Hold Reason</th>
+
 <th>Payment</th>
 
-<th>Delivered Time</th>
+<th width="150">Action</th>
 
 </tr>
 
@@ -302,17 +304,35 @@ placeholder="Cari Order ID...">
 
 <tbody>
 
-@foreach($rows as $i=>$r)
+@foreach($rows as $i => $r)
+
+@php
+
+    $status = strtolower(trim($r->status));
+
+    $isOnHold =
+        str_contains($status,'hold') ||
+
+        (
+            $status == 'lmhub_received'
+            && !empty(trim($r->on_hold_reason))
+        );
+
+@endphp
 
 <tr>
 
 <td>{{ $i+1 }}</td>
 
-<td>{{ $r->order_id }}</td>
+<td>
+
+<strong>{{ $r->order_id }}</strong>
+
+</td>
 
 <td>
 
-@if(strtolower($r->status)=='delivered')
+@if($status == 'delivered')
 
 <span class="badge bg-success">
 
@@ -320,7 +340,7 @@ Delivered
 
 </span>
 
-@elseif(str_contains(strtolower($r->status),'hold'))
+@elseif($isOnHold)
 
 <span class="badge bg-warning text-dark">
 
@@ -340,9 +360,44 @@ On Hold
 
 </td>
 
-<td>{{ $r->payment_method }}</td>
+<td>
 
-<td>{{ $r->delivered_time }}</td>
+@if($isOnHold)
+
+{{ $r->on_hold_reason ?: '-' }}
+
+@else
+
+-
+
+@endif
+
+</td>
+
+<td>
+
+{{ $r->payment_method }}
+
+</td>
+
+<td>
+
+@if($isOnHold)
+
+<a href="https://spx.shopee.co.id/#/orderDetail/{{ $r->order_id }}/order_info"
+   target="_blank"
+   class="btn btn-warning btn-sm"
+   title="Buka detail order di FMS untuk validasi On Hold">
+    🔍 Validasi
+</a>
+
+@else
+
+-
+
+@endif
+
+</td>
 
 </tr>
 
