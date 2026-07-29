@@ -58,7 +58,16 @@ class TrackingController extends Controller
             $row[$key] = $value === '' ? null : $value;
         }
     }
+$row['data_source'] = 'tracking';
 
+$row['operation_date'] =
+    !empty($row['delivered_time'])
+        ? substr($row['delivered_time'],0,10)
+        : now()->toDateString();
+
+$row['created_at'] = now();
+
+$row['updated_at'] = now();
     $row['created_at'] = now();
     $row['updated_at'] = now();
 }
@@ -85,6 +94,8 @@ class TrackingController extends Controller
             'order_account',
             'payment_method',
             'current_station',
+            'operation_date',
+'data_source',
             'updated_at'
 
         ]
@@ -159,6 +170,7 @@ if (empty($orderId)) {
 
                 'current_station' =>
                     $data['Current Station'] ?? null,
+                    'data_source'=>'monitoring',
 
                 'created_at' => now(),
                 'updated_at' => now(),
