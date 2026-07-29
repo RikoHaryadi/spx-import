@@ -115,6 +115,27 @@
     line-height:1.4;
 
 }
+@keyframes blinkLive{
+
+0%{
+opacity:1;
+}
+
+50%{
+opacity:.35;
+}
+
+100%{
+opacity:1;
+}
+
+}
+
+#liveIndicator{
+
+animation:blinkLive 1.5s infinite;
+
+}
 
     </style>
 

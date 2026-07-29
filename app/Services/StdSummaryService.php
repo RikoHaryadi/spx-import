@@ -41,29 +41,39 @@ class StdSummaryService
                     |--------------------------------------------------------------------------
                     */
 
-                    $trackingCollection = TrackingData::whereIn(
-                        'order_id',
-                        $shipmentIds
-                    )
-                    ->select(
-                        'order_id',
-                        'driver_id',
-                        'driver_name',
-                        'payment_method',
-                        'order_account',
-                        'on_hold_reason',
-                        'status'
-                    )
-                    ->get()
-                    ->keyBy('order_id');
-
+                    $trackingCollection = TrackingData::whereIn('order_id', $shipmentIds)
+    ->where('data_source', 'tracking')
+    ->select(
+        'order_id',
+        'driver_id',
+        'driver_name',
+        'payment_method',
+        'order_account',
+        'on_hold_reason',
+        'status'
+    )
+    ->get()
+    ->keyBy(function ($item) {
+        return trim($item->order_id);
+    });
+Log::info(
+    'Tracking ditemukan : '
+    .$trackingCollection->count()
+);
                     $upserts = [];
 
                     foreach ($suiteChunk as $suite) {
 
                         $tracking = $trackingCollection->get(
-                            $suite->shipment_id
-                        );
+    trim($suite->shipment_id)
+);
+if (!$tracking) {
+
+    Log::warning(
+        'Tracking tidak ditemukan : '.$suite->shipment_id
+    );
+
+}
 
                         $upserts[] = [
 
@@ -139,4 +149,18 @@ class StdSummaryService
         Log::info("TIME : {$seconds} Seconds");
         Log::info('==============================');
     }
+    private function isOnHold($row)
+{
+    $status = strtolower(trim($row->status));
+    $reason = strtolower(trim($row->on_hold_reason));
+
+    return
+        $reason != 'normal'
+        &&
+        in_array($status, [
+            'onhold',
+            'lmhub_received',
+            'lmhub_assigned'
+        ]);
+}
 }

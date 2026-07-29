@@ -323,20 +323,16 @@ public function driverDetail($driverId)
 
     if (strtolower(request('status')) == 'on hold') {
 
-        $query->where(function ($q) {
+    $query->whereIn(DB::raw('LOWER(status)'), [
+        'onhold',
+        'lmhub_received',
+        'lmhub_assigned'
+    ])
+    ->whereRaw("
+        LOWER(TRIM(COALESCE(on_hold_reason,''))) <> 'normal'
+    ");
 
-            $q->whereRaw("LOWER(status) LIKE '%hold%'")
-              ->orWhere(function ($q2) {
-
-                    $q2->whereRaw("LOWER(status) = 'lmhub_received'")
-                       ->whereNotNull('on_hold_reason')
-                       ->where('on_hold_reason','!=','');
-
-              });
-
-        });
-
-    } else {
+} else {
 
         $query->where('status', request('status'));
 
@@ -365,24 +361,9 @@ $summary = [
         return strtolower(trim($row->status)) == 'delivered';
     })->count(),
 
-    'onhold' => $allRows->filter(function ($row) {
-
-        $status = strtolower(trim($row->status));
-
-        return
-            str_contains($status,'hold')
-
-            ||
-
-            (
-
-                $status == 'lmhub_received'
-
-                && !empty(trim($row->on_hold_reason))
-
-            );
-
-    })->count(),
+'onhold' => $allRows
+    ->filter(fn($row) => $this->isOnHold($row))
+    ->count(),
 
 ];
 
@@ -397,6 +378,25 @@ $summary = [
         $summary['total'] -
         $summary['delivered'] -
         $summary['onhold'];
+        $summary['achievement'] =
+    $summary['total']
+        ? round(
+            ($summary['delivered'] / $summary['total']) * 100,
+            1
+        )
+        : 0;
+
+$summary['progress'] =
+    $summary['total']
+        ? round(
+            (
+                $summary['delivered']
+                +
+                $summary['onhold']
+            ) / $summary['total'] * 100,
+            1
+        )
+        : 0;
 
     $summary['progress'] =
         $summary['total']
@@ -439,6 +439,76 @@ public function reset()
             'success',
             'Monitoring berhasil dibersihkan.'
         );
+}
+private function isOnHold($row)
+{
+    $status = strtolower(trim($row->status));
+    $reason = strtolower(trim($row->on_hold_reason));
+
+    return
+        $reason != ''
+        &&
+        $reason != 'normal'
+        &&
+        in_array($status, [
+            'onhold',
+            'lmhub_received',
+            'lmhub_assigned'
+        ]);
+}
+public function live()
+{
+    $query = MonitoringSummary::whereDate(
+        'operation_date',
+        today()
+    );
+
+    HubContextService::apply($query);
+
+    $drivers = $query
+        ->orderByDesc('progress')
+        ->get();
+
+    $summary = [
+
+        'driver' => $drivers->count(),
+
+        'total' => $drivers->sum('total'),
+
+        'delivered' => $drivers->sum('delivered'),
+
+        'onhold' => $drivers->sum('onhold'),
+
+        'remaining' => $drivers->sum('remaining'),
+
+        'progress' => $drivers->sum('total')
+            ? round(
+                (
+                    $drivers->sum('delivered') +
+                    $drivers->sum('onhold')
+                )
+                /
+                $drivers->sum('total')
+                *100,
+                2
+            )
+            :0,
+
+        'achievement' => $drivers->sum('total')
+            ? round(
+                $drivers->sum('delivered')
+                /
+                $drivers->sum('total')
+                *100,
+                2
+            )
+            :0,
+    ];
+
+    return response()->json([
+        'summary'=>$summary,
+        'drivers'=>$drivers
+    ]);
 }
 
 }

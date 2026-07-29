@@ -13,7 +13,12 @@ class DashboardController extends Controller
     $tanggal = $request->tanggal;
 
     $query = DB::table('suite_data as s')
-        ->leftJoin('tracking_data as t', 's.shipment_id', '=', 't.order_id')
+        ->leftJoin('tracking_data as t', function ($join) {
+
+    $join->on('s.shipment_id', '=', 't.order_id')
+         ->where('t.data_source', '=', 'tracking');
+
+})
         ->selectRaw("
             s.date_id,
             s.lmhub_station_name,
@@ -80,12 +85,12 @@ $topHub = $data
         ->groupBy('driver_id');
 
     $data = DB::table('suite_data as s')
-        ->leftJoin(
-            'tracking_data as t',
-            's.shipment_id',
-            '=',
-            't.order_id'
-        )
+        ->leftJoin('tracking_data as t', function ($join) {
+
+    $join->on('s.shipment_id', '=', 't.order_id')
+         ->where('t.data_source', '=', 'tracking');
+
+})
 
         ->leftJoinSub($driverMaster, 'd', function ($join) {
             $join->on('s.driver_id', '=', 'd.driver_id');
@@ -146,7 +151,12 @@ public function kurirPerformance(Request $request)
     if ($date && $hub) {
 
         $query = DB::table('suite_data as s')
-            ->leftJoin('tracking_data as t', 's.shipment_id', '=', 't.order_id')
+            ->leftJoin('tracking_data as t', function ($join) {
+
+    $join->on('s.shipment_id', '=', 't.order_id')
+         ->where('t.data_source', '=', 'tracking');
+
+})
             ->selectRaw("
                 s.driver_id,
                 COUNT(s.shipment_id) as total_std,
@@ -182,5 +192,59 @@ public function kurirPerformance(Request $request)
     }
 
     return view('performance.kurir', compact('data', 'date', 'hub', 'hubs'));
+}
+public function live(Request $request)
+{
+    $tanggal = $request->tanggal;
+
+    $query = DB::table('std_summary')
+        ->selectRaw("
+            date_id,
+            hub,
+            COUNT(*) as total_std,
+            SUM(CASE WHEN delivered_time IS NOT NULL THEN 1 ELSE 0 END) berhasil,
+            SUM(CASE WHEN delivered_time IS NULL THEN 1 ELSE 0 END) tidak_berhasil
+        ")
+        ->whereIn('order_account', [
+            'SPX Standard Marketplace',
+            'SPX Standard',
+            'NS Marketplace Standard'
+        ]);
+
+    if ($tanggal) {
+        $query->whereDate('date_id', $tanggal);
+    }
+
+    $rows = $query
+        ->groupBy('date_id', 'hub')
+        ->orderByDesc('date_id')
+        ->get();
+
+    foreach ($rows as $r) {
+
+        $r->persentase =
+            $r->total_std
+                ? round(($r->berhasil/$r->total_std)*100,2)
+                :0;
+
+    }
+
+    return response()->json([
+
+        "summary"=>[
+            "total"=>$rows->sum('total_std'),
+            "berhasil"=>$rows->sum('berhasil'),
+            "gagal"=>$rows->sum('tidak_berhasil'),
+            "persen"=>$rows->sum('total_std')
+                ? round(
+                    ($rows->sum('berhasil')/$rows->sum('total_std'))*100,
+                    2
+                )
+                :0
+        ],
+
+        "rows"=>$rows
+
+    ]);
 }
 }

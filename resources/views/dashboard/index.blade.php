@@ -54,11 +54,42 @@
 
         <div class="card-header bg-primary text-white">
 
-            <h4 class="mb-0">
-                Dashboard STD SPX
-            </h4>
+    <div class="d-flex justify-content-between align-items-center">
+
+        <h4 class="mb-0">
+            📊 Dashboard STD SPX
+        </h4>
+
+        <div class="text-end">
+
+            <div class="fw-bold">
+
+                <span id="liveIndicator"
+                      class="badge bg-success">
+
+                    🟢 LIVE
+
+                </span>
+
+            </div>
+
+            <small>
+
+                Update terakhir :
+
+                <span id="lastUpdate">
+
+                    {{ now()->format('H:i:s') }}
+
+                </span>
+
+            </small>
 
         </div>
+
+    </div>
+
+</div>
 
         <div class="card-body">
             <div class="row mb-3">
@@ -71,7 +102,7 @@
 
                 <h5>Total STD</h5>
 
-                <h3>{{ number_format($grand_total_std ?? 0) }}</h3>
+                <h3 id="grandTotal">{{ number_format($grand_total_std ?? 0) }}</h3>
 
             </div>
 
@@ -87,7 +118,7 @@
 
                 <h5>Berhasil</h5>
 
-                <h3>{{ number_format($grand_berhasil ?? 0) }}</h3>
+                <h3 id="grandBerhasil">{{ number_format($grand_berhasil ?? 0) }}</h3>
 
             </div>
 
@@ -103,7 +134,7 @@
 
                 <h5>Tidak Berhasil</h5>
 
-                <h3>{{ number_format($grand_tidak_berhasil ?? 0) }}</h3>
+                <h3 id="grandGagal">{{ number_format($grand_tidak_berhasil ?? 0) }}</h3>
 
             </div>
 
@@ -119,7 +150,7 @@
 
                 <h5>% STD</h5>
 
-                <h3>{{ $grand_persen ?? 0 }}%</h3>
+                <h3 id="grandPersen">{{ $grand_persen ?? 0 }}%</h3>
 
             </div>
 
@@ -147,7 +178,7 @@
 
                 </thead>
 
-                <tbody>
+                <tbody id="dashboardTable">
 
                 @forelse($data as $row)
 
@@ -232,4 +263,102 @@
     </div>
 
 </div>
+<script>
+setInterval(refreshDashboard,15000);
+
+function refreshDashboard(){
+
+    let tanggal =
+        document.querySelector('[name=tanggal]').value;
+
+    fetch("/dashboard/live?tanggal="+tanggal)
+
+    .then(r=>r.json())
+
+    .then(data=>{
+
+            document.getElementById("grandTotal").innerHTML =
+                Number(data.summary.total).toLocaleString();
+
+            document.getElementById("grandBerhasil").innerHTML =
+                Number(data.summary.berhasil).toLocaleString();
+
+            document.getElementById("grandGagal").innerHTML =
+                Number(data.summary.gagal).toLocaleString();
+
+            document.getElementById("grandPersen").innerHTML =
+                data.summary.persen+"%";
+                document.getElementById("lastUpdate").innerHTML =
+                new Date().toLocaleTimeString('id-ID');
+            document.getElementById("liveIndicator").innerHTML =
+                "🟡 Updating...";
+
+            document.getElementById("liveIndicator").innerHTML =
+                "🟢 LIVE";
+
+                document.getElementById("liveIndicator")
+                .className="badge bg-success";
+
+                .catch(function(){
+
+    document.getElementById("liveIndicator").innerHTML =
+    "🔴 Offline";
+
+    document.getElementById("liveIndicator")
+    .className="badge bg-danger";
+
+});
+
+            let html='';
+
+            data.rows.forEach(function(r){
+
+                let badge='bg-danger';
+
+                if(r.persentase>=95)
+                    badge='bg-success';
+                else if(r.persentase>=90)
+                    badge='bg-warning text-dark';
+
+                html+=`
+    <tr>
+
+    <td>${r.date_id}</td>
+
+    <td>${r.hub}</td>
+
+    <td>${Number(r.total_std).toLocaleString()}</td>
+
+    <td>${Number(r.berhasil).toLocaleString()}</td>
+
+    <td>
+<a href="/dashboard/detail?date=${encodeURIComponent(r.date_id)}&hub=${encodeURIComponent(r.hub)}"
+class="btn btn-sm btn-danger">
+
+${Number(r.tidak_berhasil).toLocaleString()}
+
+</a>
+</td>
+
+<td>
+
+<span class="badge ${badge}">
+
+${r.persentase} %
+
+</span>
+
+</td>
+
+</tr>
+`;
+
+        });
+
+        document.getElementById("dashboardTable").innerHTML=html;
+
+    });
+
+}
+</script>
 @endsection

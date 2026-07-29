@@ -125,7 +125,7 @@
 
                     <h6>Driver Aktif</h6>
 
-                    <h2 class="text-primary">
+                    <h2 class="text-primary" id="driverTotal">
 
                         {{ number_format($summary['driver']) }}
 
@@ -145,7 +145,7 @@
 
                     <h6>Paket Dibawa</h6>
 
-                    <h2>
+                    <h2 id="totalPacket">
 
                         {{ number_format($summary['total']) }}
 
@@ -165,7 +165,7 @@
 
                     <h6>Delivered</h6>
 
-                    <h2 class="text-success">
+                    <h2 class="text-success" id="deliveredTotal">
 
                         {{ number_format($summary['delivered']) }}
 
@@ -185,7 +185,7 @@
 
                     <h6>On Hold</h6>
 
-                    <h2 class="text-warning">
+                    <h2 class="text-warning" id="onholdTotal">
 
                         {{ number_format($summary['onhold']) }}
 
@@ -205,7 +205,7 @@
 
                     <h6>Remaining</h6>
 
-                    <h2 class="text-danger">
+                    <h2 class="text-danger" id="remainingTotal">
 
                         {{ number_format($summary['remaining']) }}
 
@@ -226,7 +226,7 @@
                   <h6 class="mb-2">Pencapaian Pengiriman</h6>
 
 
-                        <h2 class="text-info">
+                        <h2 class="text-info" id="achievementTotal">
 
                             {{ number_format($summary['achievement'],2) }}%
 
@@ -250,12 +250,15 @@
             <div class="progress" style="height:35px;">
 
                 <div class="progress-bar bg-success"
+                    id="progressBar"
 
                      role="progressbar"
 
                      style="width:{{ $summary['progress'] }}%">
 
-                    {{ number_format($summary['progress'],2) }}%
+                    <span id="progressText">
+{{ number_format($summary['progress'],1) }}%
+</span>
 
                 </div>
 
@@ -518,7 +521,7 @@
 </div>
 
 {{-- Baru setelah itu tabel Ranking Driver --}}
-<table class="table table-hover">
+
 
         <div class="card-body table-responsive">
 
@@ -585,9 +588,7 @@
 
                         <strong>
 
-                                <a href="{{ route('monitoring.driver',$driver->driver_id) }}">
 
-                                    <b>
 
                                    <a
                                         href="{{ route('monitoring.driver',$driver->driver_id) }}"
@@ -595,7 +596,7 @@
 
                                         {{ $driver->driver_name }}
 
-                                        </a>
+                                        
 
                                     </b>
 
@@ -694,12 +695,43 @@ document.getElementById('searchDriver')
 
 });
 
-setTimeout(function(){
+setInterval(refreshMonitoring,15000);
 
-    location.reload();
+function refreshMonitoring(){
 
-},15000);
+    fetch("{{ route('monitoring.live') }}")
 
+    .then(r=>r.json())
+
+    .then(data=>{
+
+        document.getElementById("driverTotal").innerHTML =
+            data.summary.driver;
+
+        document.getElementById("totalPacket").innerHTML =
+            data.summary.total;
+
+        document.getElementById("deliveredTotal").innerHTML =
+            data.summary.delivered;
+
+        document.getElementById("onholdTotal").innerHTML =
+            data.summary.onhold;
+
+        document.getElementById("remainingTotal").innerHTML =
+            data.summary.remaining;
+
+        document.getElementById("achievementTotal").innerHTML =
+            data.summary.achievement+"%";
+
+        document.getElementById("progressBar").style.width =
+            data.summary.progress+"%";
+
+        document.getElementById("progressText").innerHTML =
+            data.summary.progress+"%";
+
+    });
+
+}
 </script>
 
 @endsection

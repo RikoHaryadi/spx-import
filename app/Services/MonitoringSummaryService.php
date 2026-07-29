@@ -19,7 +19,20 @@ class MonitoringSummaryService
 
         SUM(CASE WHEN status='Delivered' THEN 1 ELSE 0 END) delivered,
 
-        SUM(CASE WHEN status='OnHold' THEN 1 ELSE 0 END) onhold
+        SUM(
+    CASE
+        WHEN
+            LOWER(status) IN (
+                'onhold',
+                'lmhub_received',
+                'lmhub_assigned'
+            )
+            AND LOWER(TRIM(COALESCE(on_hold_reason,''))) <> 'normal'
+            AND TRIM(COALESCE(on_hold_reason,'')) <> ''
+        THEN 1
+        ELSE 0
+    END
+) AS onhold
     ")
     ->where('data_source', 'monitoring')
     ->whereDate('operation_date', $operationDate)
@@ -48,6 +61,22 @@ class MonitoringSummaryService
                 )
                 :
                 0;
+                // Nantik ganti dengan yang ini
+                // $progress =
+                    // $driver->total
+                    // ?
+                    // round(
+                    //     (
+                    //         $driver->delivered +
+                    //         $driver->onhold
+                    //     )
+                    //     /
+                    //     $driver->total
+                    //     * 100,
+                    //     2
+                    // )
+                    // :
+                    // 0;
 
             MonitoringSummary::updateOrCreate(
                 

@@ -10,6 +10,13 @@ use App\Http\Controllers\HubController;
 use App\Http\Controllers\MasterUserController;
 use App\Http\Controllers\ContexHubController;
 use Illuminate\Http\Request;
+
+Route::get('/dashboard/live', [DashboardController::class, 'live'])
+    ->name('dashboard.live');
+Route::get(
+    '/monitoring-std/live',
+    [MonitoringStdController::class, 'live']
+)->name('monitoring.live');
 Route::get('/ping', function (Request $request) {
 
     if ($request->header('X-API-KEY') !== env('API_KEY')) {
