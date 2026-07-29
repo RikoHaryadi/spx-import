@@ -50,10 +50,10 @@
                             <th>Shipment ID</th>
                             <th>Driver ID</th>
                             <th>Driver Name</th>
-                            <th>Status</th>
+                            
                             <th>On Hold Reason</th>
-                            <th>Payment</th>
-                            <th>Order Account</th>
+                           <th>Payment</th>
+<th>Validasi</th>
 
                         </tr>
 
@@ -71,13 +71,18 @@
 
                             <td>{{ $row->driver_name }}</td>
 
-                            <td>{{ $row->status }}</td>
+                            
 
                            <td>{{ $row->display_reason }}</td>
 
-                            <td>{{ $row->payment_method }}</td>
-
-                            <td>{{ $row->order_account }}</td>
+                       <td>{{ $row->payment_method }}</td>
+<td>
+    <a href="https://spx.shopee.co.id/#/orderDetail/{{ $row->shipment_id }}/order_info?"
+       target="_blank"
+       class="btn btn-sm btn-primary">
+        🔍 Cek Resi
+    </a>
+</td>
 
                         </tr>
 

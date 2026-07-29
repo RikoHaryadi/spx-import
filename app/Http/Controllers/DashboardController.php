@@ -103,7 +103,7 @@ $topHub = $data
     's.driver_id',
     's.assigned_time',      // Tambahkan ini
     'd.driver_name',
-    't.status',
+    
     't.on_hold_reason',
     't.payment_method',
     't.order_account'
