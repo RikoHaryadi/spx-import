@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Hub;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Hash;
 
 class MasterUserController extends Controller
@@ -73,62 +74,59 @@ class MasterUserController extends Controller
         'User berhasil ditambahkan.'
     );
 }
-    public function update(Request $request,User $user)
-    {
+    public function update(Request $request, User $user)
+{
+          
+\Log::info('UPDATE USER DIPANGGIL', [
+        'id' => $user->id,
+        'request' => $request->all()
+    ]);
 
-        $request->validate([
 
-            'nik'=>'required|unique:users,nik,'.$user->id,
+    $request->validate([
+    'nik' => [
+        'required',
+        Rule::unique('users', 'nik')->ignore($user->id),
+    ],
 
-            'name'=>'required',
+    'name' => 'required',
 
-            'email'=>[
-                'required',
-                'email',
-                'unique:users,email,'.$user->id,
-                'regex:/@spxexpress\.com$/'
-            ],
+    'email' => [
+        'required',
+        'email',
+        Rule::unique('users', 'email')->ignore($user->id),
+        'regex:/@spxexpress\.com$/'
+    ],
 
-            'hub_id'=>'required|exists:hubs,id',
+    'hub_id' => 'required|exists:hubs,id',
 
-            'role'=>'required'
-
-        ],[
-                'nik.required' => 'NIK wajib diisi.',
-    'nik.unique' => 'NIK sudah digunakan.',
+    'role' => 'required',
+], [
+    'nik.required' => 'NIK wajib diisi.',
+    'nik.unique'   => 'NIK sudah digunakan.',
     'email.required' => 'Email wajib diisi.',
     'email.unique' => 'Email sudah digunakan.',
-            'email.regex'=>'Gunakan email kantor @spxexpress.com'
-        ]);
+    'email.regex'  => 'Gunakan email kantor @spxexpress.com',
+]);
 
-        $user->nik=$request->nik;
-        $user->name=$request->name;
-        $user->email=strtolower($request->email);
-        $user->hub_id=$request->hub_id;
-        $user->role=$request->role;
+    $user->nik = $request->nik;
+    $user->name = $request->name;
+    $user->email = strtolower($request->email);
+    $user->hub_id = $request->hub_id;
+    $user->role = $request->role;
+    $user->is_active = $request->is_active;
 
-        if($request->filled('password'))
-        {
-            $user->password=
-                Hash::make($request->password);
-        }
-
-        $user->hub_id = $request->hub_id;
-$user->role = $request->role;
-$user->is_active = $request->is_active;
-
-if ($request->filled('password')) {
-    $user->password = Hash::make($request->password);
-}
-
-$user->save();
-
-        return back()->with(
-            'success',
-            'User berhasil diupdate.'
-        );
-
+    if ($request->filled('password')) {
+        $user->password = Hash::make($request->password);
     }
+
+    $user->save();
+
+    return back()->with(
+        'success',
+        'User berhasil diupdate.'
+    );
+}
 
      public function toggle(User $user)
     {

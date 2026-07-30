@@ -344,9 +344,9 @@ class="form-select">
 <div class="modal-dialog modal-lg">
 
 <form
+id="formEdit"
 method="POST"
-id="formEdit">
-
+action="">
 @csrf
 @method('PUT')
 
@@ -364,9 +364,12 @@ data-bs-dismiss="modal"></button>
 
 <div class="modal-body">
 
-<input
-type="hidden"
-id="editId">
+<div class="modal-body">
+
+<input type="hidden" id="editId">
+
+<div class="row">
+
 
 <div class="row">
 
@@ -375,9 +378,11 @@ id="editId">
 <label>Nama</label>
 
 <input
+type="text"
 id="editName"
 name="name"
-class="form-control">
+class="form-control"
+required>
 
 </div>
 
@@ -386,9 +391,11 @@ class="form-control">
 <label>Email</label>
 
 <input
+type="email"
 id="editEmail"
 name="email"
-class="form-control">
+class="form-control"
+required>
 
 </div>
 
@@ -397,9 +404,11 @@ class="form-control">
 <label>NIK</label>
 
 <input
+type="text"
 id="editNik"
 name="nik"
-class="form-control">
+class="form-control"
+required>
 
 </div>
 
@@ -470,10 +479,8 @@ class="form-select">
 
 <div class="modal-footer">
 
-<button class="btn btn-success">
-
-Update
-
+<button type="submit" class="btn btn-success">
+    Update
 </button>
 
 </div>
@@ -498,24 +505,26 @@ Update
 
 document.querySelectorAll('.btnEdit').forEach(function(btn){
 
-btn.onclick=function(){
+    btn.onclick = function(){
 
-let id=this.dataset.id;
+        let id = this.dataset.id;
 
-document.getElementById('formEdit').action="/master-user/"+id;
+        const form = document.getElementById('formEdit');
 
-editName.value=this.dataset.name;
-editEmail.value=this.dataset.email;
-editNik.value=this.dataset.nik;
-editHub.value=this.dataset.hub;
-editRole.value=this.dataset.role;
-editActive.value=this.dataset.active;
+        form.action = "{{ url('master-user') }}/" + id;
 
-new bootstrap.Modal(
-document.getElementById('modalEdit')
-).show();
+        document.getElementById('editName').value = this.dataset.name;
+        document.getElementById('editEmail').value = this.dataset.email;
+        document.getElementById('editNik').value = this.dataset.nik;
+        document.getElementById('editHub').value = this.dataset.hub;
+        document.getElementById('editRole').value = this.dataset.role;
+        document.getElementById('editActive').value = this.dataset.active;
 
-}
+        new bootstrap.Modal(
+            document.getElementById('modalEdit')
+        ).show();
+
+    };
 
 });
 

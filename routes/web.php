@@ -89,7 +89,10 @@ Route::middleware(['auth','active','role:owner'])->group(function () {
     Route::resource('hub', HubController::class);
 
     // Master User
-    Route::resource('master-user', MasterUserController::class);
+    Route::resource('master-user', MasterUserController::class)
+    ->parameters([
+        'master-user' => 'user'
+    ]);
 
     Route::patch(
         'master-user/{user}/toggle',

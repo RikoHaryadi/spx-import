@@ -73,34 +73,51 @@ $row['updated_at'] = now();
 }
 \Log::info('=== TRACKING AFTER NORMALIZE ===');
 \Log::info($rows[0]);
-    TrackingData::upsert(
+    foreach ($rows as $row) {
 
-        $rows,
+    $tracking = TrackingData::firstOrNew([
+        'order_id'    => $row['order_id'],
+        'data_source' => 'tracking',
+    ]);
 
-        ['order_id'],
+    /*
+    |--------------------------------------------------------------------------
+    | IDENTITAS DRIVER
+    |--------------------------------------------------------------------------
+    | Hanya disimpan pertama kali.
+    | Jangan pernah ditimpa jika upload berikutnya kosong.
+    */
 
-        [
+    if (empty($tracking->driver_id) && !empty($row['driver_id'])) {
+        $tracking->driver_id = $row['driver_id'];
+    }
 
-            'driver_id',
-            'driver_name',
-            'received_time',
-            'current_station_received_time',
-            'delivering_time',
-            'delivered_time',
-            'on_hold_time',
-            'on_hold_reason',
-            'reschedule_date',
-            'status',
-            'order_account',
-            'payment_method',
-            'current_station',
-            'operation_date',
-'data_source',
-            'updated_at'
+    if (empty($tracking->driver_name) && !empty($row['driver_name'])) {
+        $tracking->driver_name = $row['driver_name'];
+    }
 
-        ]
+    /*
+    |--------------------------------------------------------------------------
+    | FIELD YANG SELALU DIUPDATE
+    |--------------------------------------------------------------------------
+    */
 
-    );
+    $tracking->received_time                 = $row['received_time'];
+    $tracking->current_station_received_time = $row['current_station_received_time'];
+    $tracking->delivering_time               = $row['delivering_time'];
+    $tracking->delivered_time                = $row['delivered_time'];
+    $tracking->on_hold_time                  = $row['on_hold_time'];
+    $tracking->on_hold_reason                = $row['on_hold_reason'];
+    $tracking->reschedule_date               = $row['reschedule_date'];
+    $tracking->status                        = $row['status'];
+    $tracking->order_account                 = $row['order_account'];
+    $tracking->payment_method                = $row['payment_method'];
+    $tracking->current_station               = $row['current_station'];
+    $tracking->operation_date                = $row['operation_date'];
+    $tracking->data_source                   = 'tracking';
+
+    $tracking->save();
+}
 
     \App\Jobs\SyncStdSummaryJob::dispatch();
 
