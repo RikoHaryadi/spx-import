@@ -2,7 +2,13 @@
 
 @section('content')
 <style>
+.subtitle{
 
+    font-size:1rem;
+    color:#666;
+    font-weight:500;
+
+}
 body{
     min-height:100vh;
     background:linear-gradient(135deg,#ff6a00 0%,#ff7e00 45%,#ff9a00 100%);
@@ -130,7 +136,11 @@ body{
 
     <small class="text-muted">
 
-        SPX Delivery Monitoring Center
+        <h2 class="title fw-bold">
+
+    SPX Delivery Monitoring Center
+
+</h2>
         <br>
         Version 1.0
 

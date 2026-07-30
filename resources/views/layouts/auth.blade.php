@@ -14,6 +14,18 @@
       rel="stylesheet">
 
 <style>
+    .title{
+
+    font-size:2.00rem;
+    font-weight:600;
+    color:#222;
+    line-height:1.2;
+    margin-bottom:8px;
+    letter-spacing:.3px;
+    text-shadow:0 2px 6px rgba(102, 97, 97, 0.08);
+
+}
+
 
 body{
 
