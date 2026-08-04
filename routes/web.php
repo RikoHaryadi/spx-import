@@ -27,7 +27,7 @@ Route::get('/dashboard/live', [DashboardController::class, 'live'])
 Route::get(
     '/monitoring-std/live',
     [MonitoringStdController::class, 'live']
-)->name('monitoring.live');
+)->name('monitoringstd.live');
 Route::get('/ping', function (Request $request) {
 
     if ($request->header('X-API-KEY') !== env('API_KEY')) {
@@ -87,7 +87,7 @@ Route::middleware(['auth','active'])->group(function () {
 
     Route::get('/monitoring-std/driver/{driverId}',
         [MonitoringStdController::class,'driverDetail'])
-        ->name('monitoring.driver');
+        ->name('monitoringstd.driver');
         Route::get(
     '/monitoring/driver/{driverId}',
     [MonitoringDashboardController::class,'driver']
