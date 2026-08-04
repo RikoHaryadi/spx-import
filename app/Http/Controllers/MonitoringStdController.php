@@ -414,20 +414,16 @@ public function reset()
     DB::transaction(function () {
 
         $tracking = MonitoringTracking::query();
-
         HubContextService::apply($tracking);
-
         $tracking->delete();
 
         $summary = MonitoringSummary::query();
-
         HubContextService::apply($summary);
-
         $summary->delete();
-
-        MonitoringUpdateLog::truncate();
-
     });
+
+    // Di luar transaction
+    MonitoringUpdateLog::truncate();
 
     return back()->with(
         'success',
