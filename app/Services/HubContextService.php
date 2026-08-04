@@ -3,12 +3,21 @@
 namespace App\Services;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
 
 class HubContextService
 {
     public static function apply(Builder $query): Builder
     {
-        $user = auth()->user();
+
+    $user = auth()->user();
+        Log::info('Hub Context',[
+    'user' => auth()->id(),
+    'role' => $user?->role,
+    'hub' => $user?->hub_id,
+    'session' => session('hub_context')
+]);
+        
 
         if (!$user) {
             return $query;

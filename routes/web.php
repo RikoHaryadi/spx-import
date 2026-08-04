@@ -90,7 +90,7 @@ Route::middleware(['auth','active'])->group(function () {
         ->name('monitoringstd.driver');
         Route::get(
     '/monitoring/driver/{driverId}',
-    [MonitoringDashboardController::class,'driver']
+    [MonitoringStdController::class, 'driverDetail']
 )->name('monitoring.driver');
 
     Route::get('/home',[App\Http\Controllers\HomeController::class,'index'])

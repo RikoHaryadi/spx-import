@@ -699,7 +699,7 @@ setInterval(refreshMonitoring,15000);
 
 function refreshMonitoring(){
 
-    fetch("{{ route('monitoring.live') }}")
+    fetch("{{ route('monitoringstd.live') }}")
 
     .then(r=>r.json())
 

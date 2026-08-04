@@ -495,13 +495,22 @@ public function live()
             :0,
     ];
 
-    return response()->json([
+return response()->json([
+    'summary' => [
+        'driver'      => $drivers->count(),
+        'achievement' => $achievement,
+        'progress'    => $progress,
+    ],
 
-        'summary' => $summary,
+    'grand' => [
+        'total'      => $drivers->sum('total'),
+        'delivered'  => $drivers->sum('delivered'),
+        'onhold'     => $drivers->sum('onhold'),
+        'remaining'  => $drivers->sum('remaining'),
+    ],
 
-        'drivers' => $drivers
-
-    ]);
+    'drivers' => $drivers
+]);
 }
 
 }
