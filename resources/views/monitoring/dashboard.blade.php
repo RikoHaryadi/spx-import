@@ -147,7 +147,7 @@
 
                     <h2 id="totalPacket">
 
-                        {{ number_format($summary['total']) }}
+                        {{ number_format($grand['total']) }}
 
                     </h2>
 
@@ -167,7 +167,7 @@
 
                     <h2 class="text-success" id="deliveredTotal">
 
-                        {{ number_format($summary['delivered']) }}
+                       {{ number_format($driver->delivered) }}
 
                     </h2>
 
@@ -187,7 +187,7 @@
 
                     <h2 class="text-warning" id="onholdTotal">
 
-                        {{ number_format($summary['onhold']) }}
+                        {{ number_format($driver->onhold) }}
 
                     </h2>
 
@@ -207,7 +207,7 @@
 
                     <h2 class="text-danger" id="remainingTotal">
 
-                        {{ number_format($summary['remaining']) }}
+                        {{ number_format($grand['remaining']) }}
 
                     </h2>
 
@@ -614,29 +614,21 @@
 
                     </td>
 
-                    <td>
+                   <td>
+    {{ number_format($driver->total) }}
+</td>
 
-                        {{ number_format($driver->total) }}
+<td class="text-success">
+    {{ number_format($driver->delivered) }}
+</td>
 
-                    </td>
+<td class="text-warning">
+    {{ number_format($driver->onhold) }}
+</td>
 
-                    <td class="text-success">
-
-                        {{ number_format($driver->delivered) }}
-
-                    </td>
-
-                    <td class="text-warning">
-
-                        {{ number_format($driver->onhold) }}
-
-                    </td>
-
-                    <td>
-
-                        {{ number_format($driver->remaining) }}
-
-                    </td>
+<td>
+    {{ number_format($driver->remaining) }}
+</td>
 
                     <td>
 
@@ -694,7 +686,7 @@ document.getElementById('searchDriver')
     });
 
 });
-refreshMonitoring();
+
 setInterval(refreshMonitoring,15000);
 
 function refreshMonitoring(){
@@ -704,10 +696,8 @@ function refreshMonitoring(){
     .then(r=>r.json())
 
     .then(data=>{
-    console.log(data.summary);
-
-       document.getElementById("driverTotal").innerHTML =
-    data.summary.driver.toLocaleString();
+document.getElementById("driverTotal").innerHTML =
+    data.summary.driver;
 
 document.getElementById("totalPacket").innerHTML =
     data.grand.total.toLocaleString();

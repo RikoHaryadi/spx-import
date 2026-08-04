@@ -12,7 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tracking_data', function (Blueprint $table) {
-            //
+            
+            $table->string('data_source')
+                  ->default('tracking')
+                  ->after('operation_date');
         });
     }
 
@@ -22,7 +25,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('tracking_data', function (Blueprint $table) {
-            //
+              $table->dropColumn('data_source');
         });
     }
 };

@@ -2,145 +2,254 @@
 
 namespace App\Services;
 
-use App\Models\TrackingData;
 use App\Models\MonitoringSummary;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class MonitoringSummaryService
 {
-    public static function sync($operationDate)
+    public static function sync(): void
     {
+        $start = microtime(true);
 
-      $drivers = TrackingData::selectRaw("
-        hub_id,
-        driver_id,
-        driver_name,
+        Log::info('======================================');
+        Log::info('MONITORING SUMMARY START');
+        Log::info('======================================');
 
-        COUNT(*) as total,
+        DB::transaction(function () use ($start) {
 
-        SUM(CASE WHEN status='Delivered' THEN 1 ELSE 0 END) delivered,
+            $summary = DB::table('monitoring_tracking')
+    ->whereNotNull('current_driver_id')
+    ->where('current_driver_id', '<>', '')
+    ->where('current_driver_id', '<>', '0')
+    ->selectRaw("
+        operation_date,
 
-        SUM(
-    CASE
-        WHEN
-            LOWER(status) IN (
-                'onhold',
-                'lmhub_received',
-                'lmhub_assigned'
-            )
-            AND LOWER(TRIM(COALESCE(on_hold_reason,''))) <> 'normal'
-            AND TRIM(COALESCE(on_hold_reason,'')) <> ''
-        THEN 1
-        ELSE 0
-    END
-) AS onhold
-    ")
-    ->where('data_source', 'monitoring')
-    ->whereDate('operation_date', $operationDate)
-    ->groupBy(
-        'hub_id',
-        'driver_id',
-        'driver_name'
-    )
-    ->get();
+        current_driver_id   as driver_id,
+        current_driver_name as driver_name,
 
-        foreach ($drivers as $driver) {
+                    hub_id,
 
-            $remaining =
-                $driver->total
-                -
-                $driver->delivered
-                -
-                $driver->onhold;
+                    COUNT(*) as total,
 
-            $progress =
-                $driver->total
-                ?
-                round(
-                    ($driver->delivered / $driver->total) * 100,
-                    2
+                    SUM(
+                        CASE
+                            WHEN status='Delivered'
+                            THEN 1 ELSE 0
+                        END
+                    ) as delivered,
+
+                    SUM(
+                        CASE
+                            WHEN status IN ('OnHold','LMHub_Received')
+                            THEN 1 ELSE 0
+                        END
+                    ) as onhold,
+
+                    SUM(
+                        CASE
+                            WHEN status='Delivering'
+                            THEN 1 ELSE 0
+                        END
+                    ) as delivering,
+
+                    SUM(
+                        CASE
+                            WHEN payment_method='COD'
+                            THEN 1 ELSE 0
+                        END
+                    ) as cod_total,
+
+                    SUM(
+                        CASE
+                            WHEN payment_method='COD'
+                             AND status='Delivered'
+                            THEN 1 ELSE 0
+                        END
+                    ) as cod_delivered,
+
+                    SUM(
+                        CASE
+                            WHEN payment_method<>'COD'
+                            THEN 1 ELSE 0
+                        END
+                    ) as noncod_total,
+
+                    SUM(
+                        CASE
+                            WHEN payment_method<>'COD'
+                             AND status='Delivered'
+                            THEN 1 ELSE 0
+                        END
+                    ) as noncod_delivered
+                ")
+                ->groupBy(
+                    'operation_date',
+                    'current_driver_id',
+                    'current_driver_name',
+                    'hub_id'
                 )
-                :
-                0;
-                // Nantik ganti dengan yang ini
-                // $progress =
-                    // $driver->total
-                    // ?
-                    // round(
-                    //     (
-                    //         $driver->delivered +
-                    //         $driver->onhold
-                    //     )
-                    //     /
-                    //     $driver->total
-                    //     * 100,
-                    //     2
-                    // )
-                    // :
-                    // 0;
+                ->get();
 
-            MonitoringSummary::updateOrCreate(
-                
+            Log::info('Driver : '.$summary->count());
+            Log::info(
+'Delivered : '.$summary->sum('delivered')
+);
 
-                [
-                    'hub_id' => $driver->hub_id,
+Log::info(
+'OnHold : '.$summary->sum('onhold')
+);
 
-                    'operation_date' => $operationDate,
+Log::info(
+'Delivering : '.$summary->sum('delivering')
+);
 
-                    'driver_id' => $driver->driver_id,
+// Log::info(
+// 'Remaining : '.$upsertsRemaining
+// );
 
-                ],
+            $upserts = [];
 
-                [
-                    // 'hub_id' => $driver->hub_id,
+            foreach ($summary as $row) {
 
-                    'driver_name' => $driver->driver_name,
+                $remaining = max(
+                    0,
+                    $row->total
+                    - $row->delivered
+                    - $row->onhold
+                );
 
-                    'total' => $driver->total,
+                $progress = $row->total
+                    ? round(
+                        ($row->delivered / $row->total) * 100,
+                        2
+                    )
+                    : 0;
 
-                    'delivered' => $driver->delivered,
+                if ($progress >= 98) {
 
-                    'onhold' => $driver->onhold,
+                    $label = 'Excellent';
+                    $color = 'success';
+
+                } elseif ($progress >= 95) {
+
+                    $label = 'Good';
+                    $color = 'primary';
+
+                } elseif ($progress >= 90) {
+
+                    $label = 'Warning';
+                    $color = 'warning';
+
+                } else {
+
+                    $label = 'Critical';
+                    $color = 'danger';
+
+                }
+
+                $upserts[] = [
+
+                    'operation_date' => $row->operation_date,
+
+                    'driver_id' => $row->driver_id,
+
+                    'driver_name' => $row->driver_name,
+
+                    'hub_id' => $row->hub_id,
+
+                    'total' => $row->total,
+
+                    'delivered' => $row->delivered,
+
+                    'onhold' => $row->onhold,
+
+                    'delivering' => $row->delivering,
 
                     'remaining' => $remaining,
 
                     'progress' => $progress,
 
+                    'status_label' => $label,
+
+                    'status_color' => $color,
+
+                    'cod_total' => $row->cod_total,
+
+                    'cod_delivered' => $row->cod_delivered,
+
+                    'noncod_total' => $row->noncod_total,
+
+                    'noncod_delivered' => $row->noncod_delivered,
+
+                    'created_at' => now(),
+
+                    'updated_at' => now(),
+
+                ];
+            }
+
+            MonitoringSummary::upsert(
+
+                $upserts,
+
+                [
+                    'operation_date',
+                    'driver_id',
+                    'hub_id'
+                ],
+
+                [
+
+                    'driver_name',
+
+                    'hub_id',
+
+                    'total',
+
+                    'delivered',
+
+                    'onhold',
+
+                    'delivering',
+
+                    'remaining',
+
+                    'progress',
+
+                    'status_label',
+
+                    'status_color',
+
+                    'cod_total',
+
+                    'cod_delivered',
+
+                    'noncod_total',
+
+                    'noncod_delivered',
+
+                    'updated_at'
+
                 ]
 
             );
-        }
-    }
-    private function statusLabel($progress)
-{
-    if ($progress >= 100) {
-        return 'FINISH';
-    }
 
-    if ($progress >= 80) {
-        return 'ON PROGRESS';
+            Log::info('Summary : '.count($upserts));
+
+            Log::info(
+                'Time : '.
+                round(
+                    microtime(true)-$start,
+                    2
+                ).
+                ' Seconds'
+            );
+
+            Log::info('======================================');
+            Log::info('MONITORING SUMMARY FINISH');
+            Log::info('======================================');
+
+        });
     }
-
-    if ($progress >= 40) {
-        return 'NEED ATTENTION';
-    }
-
-    return 'CRITICAL';
-}
-
-private function statusColor($progress)
-{
-    if ($progress >= 100) {
-        return 'success';
-    }
-
-    if ($progress >= 80) {
-        return 'primary';
-    }
-
-    if ($progress >= 40) {
-        return 'warning';
-    }
-
-    return 'danger';
-}
 }

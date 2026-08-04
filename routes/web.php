@@ -9,7 +9,18 @@ use App\Http\Controllers\MonitoringStdController;
 use App\Http\Controllers\HubController;
 use App\Http\Controllers\MasterUserController;
 use App\Http\Controllers\ContexHubController;
+use App\Http\Controllers\MonitoringDashboardController;
 use Illuminate\Http\Request;
+
+Route::get(
+    '/monitoring/dashboard',
+    [MonitoringDashboardController::class, 'index']
+)->name('monitoring.dashboard');
+
+Route::get(
+    '/monitoring/live',
+    [MonitoringDashboardController::class,'live']
+)->name('monitoring.live');
 
 Route::get('/dashboard/live', [DashboardController::class, 'live'])
     ->name('dashboard.live');
@@ -77,6 +88,10 @@ Route::middleware(['auth','active'])->group(function () {
     Route::get('/monitoring-std/driver/{driverId}',
         [MonitoringStdController::class,'driverDetail'])
         ->name('monitoring.driver');
+        Route::get(
+    '/monitoring/driver/{driverId}',
+    [MonitoringDashboardController::class,'driver']
+)->name('monitoring.driver');
 
     Route::get('/home',[App\Http\Controllers\HomeController::class,'index'])
         ->name('home');

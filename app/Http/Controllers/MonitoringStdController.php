@@ -1,407 +1,403 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Models\TrackingData;
+
 use Illuminate\Http\Request;
-use App\Services\MonitoringSummaryService;
-use App\Models\MonitoringSummary;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+use App\Models\MonitoringTracking;
+use App\Models\MonitoringSummary;
+use App\Models\MonitoringUpdateLog;
+
 use App\Services\HubContextService;
+use App\Services\MonitoringSyncService;
+use App\Services\MonitoringSummaryService;
+
 class MonitoringStdController extends Controller
 {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard Monitoring
+    |--------------------------------------------------------------------------
+    */
+
     public function index()
-{
-$query = MonitoringSummary::whereDate(
-    'operation_date',
-    today()
-);
+    {
+        $query = MonitoringSummary::whereDate(
+            'operation_date',
+            today()
+        );
 
-HubContextService::apply($query);
+        HubContextService::apply($query);
 
-$drivers = $query
-    ->orderByDesc('progress')
-    ->get();
+        $drivers = $query
+            ->orderByDesc('progress')
+            ->orderByDesc('delivered')
+            ->get();
 
+        /*
+        |--------------------------------------------------------------------------
+        | Summary
+        |--------------------------------------------------------------------------
+        */
 
+        $summary = [
 
-$drivers = $query
-    ->orderByDesc('progress')
-    ->get();
+            'driver'      => $drivers->count(),
 
-$topDrivers = $drivers
-    ->sortByDesc('progress')
-    ->take(5);
+            'total'       => $drivers->sum('total'),
 
-$remainingDrivers = $drivers
-    ->sortByDesc('remaining')
-    ->take(5);
+            'delivered'   => $drivers->sum('delivered'),
 
-$onHoldDrivers = $drivers
-    ->sortByDesc('onhold')
-    ->take(5);
+            'onhold'      => $drivers->sum('onhold'),
 
-$fastestDrivers = $drivers
-    ->sortByDesc('delivered')
-    ->take(5);
+            'remaining'   => $drivers->sum('remaining'),
 
+            'progress'    => $drivers->sum('total')
+                ? round(
+                    (
+                        $drivers->sum('delivered') +
+                        $drivers->sum('onhold')
+                    )
+                    /
+                    $drivers->sum('total')
+                    *100,
+                    2
+                )
+                :0,
 
+            'achievement' => $drivers->sum('total')
+                ? round(
+                    $drivers->sum('delivered')
+                    /
+                    $drivers->sum('total')
+                    *100,
+                    2
+                )
+                :0,
 
-$summary = [
+        ];
 
-    'driver' => $drivers->count(),
+        /*
+        |--------------------------------------------------------------------------
+        | Ranking
+        |--------------------------------------------------------------------------
+        */
 
-    'total' => $drivers->sum('total'),
+        $topDrivers = $drivers
+            ->sortByDesc('progress')
+            ->take(5)
+            ->values();
 
-    'delivered' => $drivers->sum('delivered'),
+        $remainingDrivers = $drivers
+            ->sortByDesc('remaining')
+            ->take(5)
+            ->values();
 
-    'onhold' => $drivers->sum('onhold'),
+        $onHoldDrivers = $drivers
+            ->sortByDesc('onhold')
+            ->take(5)
+            ->values();
 
-    'remaining' => $drivers->sum('remaining'),
+        $fastestDrivers = $drivers
+            ->sortByDesc('delivered')
+            ->take(5)
+            ->values();
 
-    // Progress Pengantaran
-    'progress' => $drivers->sum('total') > 0
-        ? round(
-            (
-                $drivers->sum('delivered') +
-                $drivers->sum('onhold')
-            ) / $drivers->sum('total') * 100,
-            2
-        )
-        : 0,
+        /*
+        |--------------------------------------------------------------------------
+        | Cek apakah sudah ada data Monitoring
+        |--------------------------------------------------------------------------
+        */
 
-    // Pencapaian Keberhasilan Pengiriman
-    'achievement' => $drivers->sum('total') > 0
-        ? round(
-            $drivers->sum('delivered') /
-            $drivers->sum('total') * 100,
-            2
-        )
-        : 0,
+        $exists = MonitoringTracking::query();
 
-];
-$topDrivers = $drivers
-    ->sortByDesc('progress')
-    ->take(5);
+        HubContextService::apply($exists);
 
-$remainingDrivers = $drivers
-    ->sortByDesc('remaining')
-    ->take(5);
+        $hasMonitoring = $exists->exists();
 
-$onHoldDrivers = $drivers
-    ->sortByDesc('onhold')
-    ->take(5);
-
-$fastestDrivers = $drivers
-    ->sortByDesc('delivered')
-    ->take(5);
-
-$query = TrackingData::where(
-    'data_source',
-    'monitoring'
-);
-
-if(auth()->user()->role != 'owner'){
-
-    $query->where(
-        'hub_id',
-        auth()->user()->hub_id
-    );
-
-}
-
-$hasMonitoring = $query->exists();
-return view(
-    'monitoring.index',
-    compact(
-        'drivers',
-        'summary',
-        'topDrivers',
-        'remainingDrivers',
-        'onHoldDrivers',
-        'fastestDrivers',
-        'hasMonitoring'
-    )
-);
-}
-
-  public function import(Request $request)
-{
-        if (auth()->user()->role === 'viewer') {
-
-        abort(403, 'Viewer tidak memiliki hak upload Monitoring.');
-
-    }
-    $request->validate([
-        'file' => 'required|mimes:csv,txt'
-    ]);
-
-
-
-    $file = fopen(
-        $request->file('file')->getRealPath(),
-        'r'
-    );
-
-    $header = fgetcsv($file, 0, ',');
-
-    $header = array_map(function ($v) {
-        return trim(preg_replace('/^\xEF\xBB\xBF/', '', $v));
-    }, $header);
-
-    $rows = [];
-
-while (($row = fgetcsv($file,0,',')) !== false) {
-
-    $data = array_combine($header,$row);
-    if (count($rows) == 0) {
-    \Log::info($data);
-}
-
-    $orderId = trim($data['Order ID'] ?? '');
-
-    if ($orderId == '') {
-        continue;
+        return view(
+            'monitoring.index',
+            compact(
+                'drivers',
+                'summary',
+                'topDrivers',
+                'remainingDrivers',
+                'onHoldDrivers',
+                'fastestDrivers',
+                'hasMonitoring'
+            )
+        );
     }
 
-    $rows[] = [
+    /*
+    |--------------------------------------------------------------------------
+    | Import CSV Monitoring
+    |--------------------------------------------------------------------------
+    */
 
-        'order_id'=>$orderId,
+    public function import(Request $request)
+    {
 
-        'driver_id'=>$data['Driver ID'] ?? null,
+        if(auth()->user()->role == 'viewer'){
 
-        'driver_name'=>$data['Driver Name'] ?? null,
+            abort(
+                403,
+                'Viewer tidak memiliki hak upload Monitoring.'
+            );
 
-        'received_time'=>$this->emptyToNull($data['Received Time'] ?? null),
+        }
 
-        'current_station_received_time'=>$this->emptyToNull($data['Current Station Received Time'] ?? null),
+        $request->validate([
 
-        'delivering_time'=>$this->emptyToNull($data['Delivering Time'] ?? null),
+            'file' => 'required|mimes:csv,txt'
 
-        'delivered_time'=>$this->emptyToNull($data['Delivered Time'] ?? null),
+        ]);
 
-        'on_hold_time'=>$this->emptyToNull($data['OnHold Time'] ?? null),
+        $file = fopen(
+            $request
+                ->file('file')
+                ->getRealPath(),
+            'r'
+        );
 
-        'on_hold_reason'=>$data['OnHoldReason'] ?? null,
+        $header = fgetcsv($file);
 
-        'reschedule_date'=>$this->emptyToNull($data['Reschedule Date'] ?? null),
+        $header = array_map(function($v){
 
-        'status'=>$data['Status'] ?? null,
+            return trim(
+                preg_replace(
+                    '/^\xEF\xBB\xBF/',
+                    '',
+                    $v
+                )
+            );
 
-        'order_account'=>$data['Order Account'] ?? null,
+        },$header);
 
-        'payment_method'=>$data['Payment Method'] ?? null,
+        $rows=[];
 
-        'current_station'=>$data['Current Station'] ?? null,
-        
+        while(($row=fgetcsv($file))!==false){
 
-        //
-        // INI YANG MEMBEDAKAN DENGAN TRACKING BIASA
-        //
-        'hub_id'=>auth()->user()->hub_id,
-        'operation_date'=>today(),
+            $data=array_combine(
+                $header,
+                $row
+            );
 
-        'data_source'=>'monitoring',
+            $orderId=trim(
+                $data['Order ID'] ?? ''
+            );
 
-        'created_at'=>now(),
+            if($orderId==''){
+                continue;
+            }
 
-        'updated_at'=>now()
+            $rows[]=[
 
-    ];
+                'order_id'=>$orderId,
 
-}
-fclose($file);
+                'driver_id'=>$data['Driver ID'] ?? null,
 
+                'driver_name'=>$data['Driver Name'] ?? null,
 
-\Log::info('Total rows : '.count($rows));
+                'received_time'=>$this->emptyToNull(
+                    $data['Received Time'] ?? null
+                ),
 
+                'current_station_received_time'=>$this->emptyToNull(
+                    $data['Current Station Received Time'] ?? null
+                ),
 
-foreach (array_chunk($rows, 500) as $chunk) {
+                'delivering_time'=>$this->emptyToNull(
+                    $data['Delivering Time'] ?? null
+                ),
 
-    \Log::info('Import chunk : '.count($chunk));
+                'delivered_time'=>$this->emptyToNull(
+                    $data['Delivered Time'] ?? null
+                ),
 
-    TrackingData::upsert(
+                'on_hold_time'=>$this->emptyToNull(
+                    $data['OnHold Time'] ?? null
+                ),
 
-       $chunk,
+                'on_hold_reason'=>$data['OnHoldReason'] ?? null,
 
-    ['order_id'],
+                'reschedule_date'=>$this->emptyToNull(
+                    $data['Reschedule Date'] ?? null
+                ),
 
-    [
+                'status'=>$data['Status'] ?? null,
 
-        'driver_id',
-        'driver_name',
-        'received_time',
-        'current_station_received_time',
-        'delivering_time',
-        'delivered_time',
-        'on_hold_time',
-        'on_hold_reason',
-        'reschedule_date',
-        'status',
-        'operation_date',
-        'data_source',
-        'order_account',
-        'payment_method',
-        'current_station',
+                'payment_method'=>$data['Payment Method'] ?? null,
 
-        'hub_id',      // ← WAJIB
+                'order_account'=>$data['Order Account'] ?? null,
 
-        'updated_at'
+                'current_station'=>$data['Current Station'] ?? null,
 
-    ]
+            ];
 
-);
+        }
 
-}
+        fclose($file);
 
-MonitoringSummary::whereDate('operation_date', today())
-    ->where('hub_id', auth()->user()->hub_id)
-    ->delete();
+        Log::info(
+            'Monitoring import : '.count($rows).' rows'
+        );
 
-MonitoringSummaryService::sync(today());
+        /*
+        |--------------------------------------------------------------------------
+        | Jalankan Engine Monitoring Baru
+        |--------------------------------------------------------------------------
+        */
 
-return back()->with(
+        MonitoringSyncService::sync(
+            $rows,
+            auth()->user()->hub_id
+        );
 
-    'success',
+        MonitoringSummaryService::sync();
 
-    'Monitoring berhasil diimport : '
+        return back()->with(
 
-    .count($rows)
+            'success',
 
-    .' resi'
+            count($rows).' resi berhasil diimport.'
 
-);
-}
-private function emptyToNull($value)
-{
-    $value = trim((string)$value);
+        );
 
-    if ($value === '' || $value === '0') {
-        return null;
+    }
+    private function emptyToNull($value)
+    {
+        $value = trim((string) $value);
+
+        return ($value === '' || $value === '0')
+            ? null
+            : $value;
     }
 
-    return $value;
-}
-public function driver($driver)
+    public function driver($driverId)
 {
-
-   return $this->driverDetail($driver);
-
+    return $this->driverDetail($driverId);
 }
 
 public function driverDetail($driverId)
 {
-    $operationDate = today();
-
-    // Query dasar (SEMUA paket driver)
-    $baseQuery = TrackingData::where(
-        'driver_id',
+    $query = MonitoringTracking::where(
+        'current_driver_id',
         $driverId
-    )
-    ->where(
-        'data_source',
-        'monitoring'
-    )
-    ->whereDate(
+    )->whereDate(
         'operation_date',
-        $operationDate
+        today()
     );
 
-    HubContextService::apply($baseQuery);
+    HubContextService::apply($query);
 
-    // Ambil semua data driver untuk menghitung summary
-    $allRows = (clone $baseQuery)->get();
+    $allRows = $query->get();
 
-    // Kalau driver memang tidak ada sama sekali baru 404
     if ($allRows->isEmpty()) {
         abort(404);
     }
 
-    // Query untuk tabel (boleh difilter)
-    $query = clone $baseQuery;
+    $table = clone $query;
 
-   if (request('status')) {
+    if (request('status')) {
 
-    if (strtolower(request('status')) == 'on hold') {
+        if (strtolower(request('status')) == 'on hold') {
 
-    $query->whereIn(DB::raw('LOWER(status)'), [
-        'onhold',
-        'lmhub_received',
-        'lmhub_assigned'
-    ])
-    ->whereRaw("
-        LOWER(TRIM(COALESCE(on_hold_reason,''))) <> 'normal'
-    ");
+            $table->whereIn('status', [
+                'OnHold',
+                'LMHub_Received'
+            ]);
 
-} else {
+        } else {
 
-        $query->where('status', request('status'));
+            $table->where(
+                'status',
+                request('status')
+            );
+
+        }
 
     }
 
-}
     if (request('payment') == 'COD') {
-        $query->where('payment_method', 'COD');
+
+        $table->where(
+            'payment_method',
+            'COD'
+        );
+
     }
 
     if (strtoupper(request('payment')) == 'NONCOD') {
-        $query->where('payment_method', '!=', 'COD');
+
+        $table->where(
+            'payment_method',
+            '!=',
+            'COD'
+        );
+
     }
 
-    $rows = $query
+    $rows = $table
         ->orderBy('status')
         ->get();
 
     $driver = $allRows->first();
 
-$summary = [
+    $summary = [
 
-    'total' => $allRows->count(),
+        'total' => $allRows->count(),
 
-    'delivered' => $allRows->filter(function ($row) {
-        return strtolower(trim($row->status)) == 'delivered';
-    })->count(),
+        'delivered' => $allRows
+            ->where('status','Delivered')
+            ->count(),
 
-'onhold' => $allRows
-    ->filter(fn($row) => $this->isOnHold($row))
-    ->count(),
+        'onhold' => $allRows
+            ->whereIn('status',[
+                'OnHold',
+                'LMHub_Received'
+            ])
+            ->count(),
 
-];
+        'remaining' => $allRows
+            ->where('status','Delivering')
+            ->count(),
 
-    $summary['cod'] =
-        $allRows->where('payment_method','COD')->count();
+        'cod' => $allRows
+            ->where('payment_method','COD')
+            ->count(),
 
-    $summary['noncod'] =
-        $summary['total'] -
-        $summary['cod'];
+        'noncod' => $allRows
+            ->where('payment_method','!=','COD')
+            ->count(),
 
-    $summary['remaining'] =
-        $summary['total'] -
-        $summary['delivered'] -
-        $summary['onhold'];
-        $summary['achievement'] =
-    $summary['total']
-        ? round(
-            ($summary['delivered'] / $summary['total']) * 100,
-            1
-        )
-        : 0;
+    ];
 
-$summary['progress'] =
-    $summary['total']
-        ? round(
-            (
-                $summary['delivered']
-                +
-                $summary['onhold']
-            ) / $summary['total'] * 100,
-            1
-        )
-        : 0;
+    $summary['achievement'] =
+        $summary['total']
+            ? round(
+                ($summary['delivered']/$summary['total'])*100,
+                2
+            )
+            :0;
 
     $summary['progress'] =
         $summary['total']
-            ? round(($summary['delivered']/$summary['total'])*100,1)
-            : 0;
+            ? round(
+                (
+                    $summary['delivered']
+                    +
+                    $summary['onhold']
+                )
+                /
+                $summary['total']
+                *100,
+                2
+            )
+            :0;
 
     return view(
         'monitoring.driver-detail',
@@ -412,14 +408,12 @@ $summary['progress'] =
         )
     );
 }
+
 public function reset()
 {
     DB::transaction(function () {
 
-        $tracking = TrackingData::where(
-            'data_source',
-            'monitoring'
-        );
+        $tracking = MonitoringTracking::query();
 
         HubContextService::apply($tracking);
 
@@ -431,31 +425,24 @@ public function reset()
 
         $summary->delete();
 
+        MonitoringUpdateLog::truncate();
+
     });
 
-    return redirect()
-        ->route('monitoring.index')
-        ->with(
-            'success',
-            'Monitoring berhasil dibersihkan.'
-        );
+    return back()->with(
+        'success',
+        'Monitoring berhasil dibersihkan.'
+    );
 }
+
 private function isOnHold($row)
 {
-    $status = strtolower(trim($row->status));
-    $reason = strtolower(trim($row->on_hold_reason));
-
-    return
-        $reason != ''
-        &&
-        $reason != 'normal'
-        &&
-        in_array($status, [
-            'onhold',
-            'lmhub_received',
-            'lmhub_assigned'
-        ]);
+    return in_array($row->status,[
+        'OnHold',
+        'LMHub_Received'
+    ]);
 }
+
 public function live()
 {
     $query = MonitoringSummary::whereDate(
@@ -481,33 +468,39 @@ public function live()
 
         'remaining' => $drivers->sum('remaining'),
 
-        'progress' => $drivers->sum('total')
+        'achievement' => $drivers->sum('total')
             ? round(
                 (
-                    $drivers->sum('delivered') +
-                    $drivers->sum('onhold')
-                )
-                /
-                $drivers->sum('total')
-                *100,
+                    $drivers->sum('delivered')
+                    /
+                    $drivers->sum('total')
+                ) * 100,
                 2
             )
             :0,
 
-        'achievement' => $drivers->sum('total')
+        'progress' => $drivers->sum('total')
             ? round(
-                $drivers->sum('delivered')
-                /
-                $drivers->sum('total')
-                *100,
+                (
+                    (
+                        $drivers->sum('delivered')
+                        +
+                        $drivers->sum('onhold')
+                    )
+                    /
+                    $drivers->sum('total')
+                ) * 100,
                 2
             )
             :0,
     ];
 
     return response()->json([
-        'summary'=>$summary,
-        'drivers'=>$drivers
+
+        'summary' => $summary,
+
+        'drivers' => $drivers
+
     ]);
 }
 

@@ -187,7 +187,7 @@ if (empty($orderId)) {
 
                 'current_station' =>
                     $data['Current Station'] ?? null,
-                    'data_source'=>'monitoring',
+                    'data_source' => 'tracking',
 
                 'created_at' => now(),
                 'updated_at' => now(),

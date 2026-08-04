@@ -13,12 +13,12 @@
             <div>
 
                 <h3 class="mb-0">
-                    🚚 {{ $driver->driver_name }}
+                    🚚 {{ $driver->current_driver_name }}
                 </h3>
 
                 <small>
                     Driver ID :
-                    {{ $driver->driver_id }}
+                    {{ $driver->current_driver_id }}
                 </small>
 
             </div>
@@ -384,7 +384,7 @@ On Hold
 
 @if($isOnHold)
 
-<a href="https://spx.shopee.co.id/#/orderDetail/{{ $r->order_id }}/order_info"
+<a href="https://spx.shopee.co.id/#/orderDetail/{{ $r->order_id }}/proof_of_onhold"
    target="_blank"
    class="btn btn-warning btn-sm"
    title="Buka detail order di FMS untuk validasi On Hold">
