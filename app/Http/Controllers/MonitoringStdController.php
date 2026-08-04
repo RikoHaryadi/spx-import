@@ -422,9 +422,6 @@ public function reset()
         $summary->delete();
     });
 
-    // Di luar transaction
-    MonitoringUpdateLog::truncate();
-
     return back()->with(
         'success',
         'Monitoring berhasil dibersihkan.'
