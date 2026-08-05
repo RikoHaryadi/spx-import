@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use App\Models\StdSummary;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
@@ -135,63 +136,95 @@ return view(
 }
 public function kurirPerformance(Request $request)
 {
-    $date = $request->date;
-    $hub  = $request->hub;
+    $user = Auth::user();
 
-    // 🔥 ambil list hub dari data existing
-    $hubs = DB::table('suite_data')
-        ->select('lmhub_station_name')
-        ->whereNotNull('lmhub_station_name')
-        ->distinct()
-        ->orderBy('lmhub_station_name')
-        ->get();
+    // Cek owner
+    $isOwner = strtolower($user->role) === 'owner';
 
-    $data = collect();
+    // Default tanggal = hari ini
+    $date = $request->date ?? now()->toDateString();
 
-    if ($date && $hub) {
+    // List hub hanya untuk owner
+    $hubs = collect();
 
-        $query = DB::table('suite_data as s')
-            ->leftJoin('tracking_data as t', function ($join) {
+    if ($isOwner) {
 
-    $join->on('s.shipment_id', '=', 't.order_id')
-         ->where('t.data_source', '=', 'tracking');
+        $hubs = DB::table('suite_data')
+            ->select('lmhub_station_name')
+            ->whereNotNull('lmhub_station_name')
+            ->distinct()
+            ->orderBy('lmhub_station_name')
+            ->get();
 
-})
-            ->selectRaw("
-                s.driver_id,
-                COUNT(s.shipment_id) as total_std,
-                SUM(CASE WHEN s.delivered_time IS NOT NULL THEN 1 ELSE 0 END) as berhasil,
-                SUM(CASE WHEN s.delivered_time IS NULL THEN 1 ELSE 0 END) as tidak_berhasil
-            ")
-            ->where('s.date_id', $date)
-            ->where('s.lmhub_station_name', $hub)
-            ->whereIn('t.order_account', [
-                'SPX Standard Marketplace',
-                'SPX Standard',
-                'NS Marketplace Standard'
-            ])
-            ->groupBy('s.driver_id');
+        // Default Hub
+        $hub = $request->hub ?? 'Kota Baru 2 Hub';
 
-        $raw = $query->get();
+    } else {
 
-        $driverNames = DB::table('tracking_data')
-            ->select('driver_id', DB::raw('MAX(driver_name) as driver_name'))
-            ->groupBy('driver_id')
-            ->pluck('driver_name', 'driver_id');
+        // Hub mengikuti login user
+        $hub = $user->hub->hub_name;
 
-        $data = $raw->map(function ($row) use ($driverNames) {
-
-            $row->driver_name = $driverNames[$row->driver_id] ?? '-';
-
-            $row->persentase = $row->total_std > 0
-                ? round(($row->berhasil / $row->total_std) * 100, 2)
-                : 0;
-
-            return $row;
-        });
     }
 
-    return view('performance.kurir', compact('data', 'date', 'hub', 'hubs'));
+    $raw = DB::table('suite_data as s')
+
+        ->leftJoin('tracking_data as t', function ($join) {
+
+            $join->on('s.shipment_id', '=', 't.order_id')
+                 ->where('t.data_source', '=', 'tracking');
+
+        })
+
+        ->selectRaw("
+            s.driver_id,
+            COUNT(s.shipment_id) total_std,
+            SUM(CASE WHEN s.delivered_time IS NOT NULL THEN 1 ELSE 0 END) berhasil,
+            SUM(CASE WHEN s.delivered_time IS NULL THEN 1 ELSE 0 END) tidak_berhasil
+        ")
+
+        ->whereDate('s.date_id', $date)
+
+        ->where('s.lmhub_station_name', $hub)
+
+        ->whereIn('t.order_account', [
+            'SPX Standard Marketplace',
+            'SPX Standard',
+            'NS Marketplace Standard'
+        ])
+
+        ->groupBy('s.driver_id')
+
+        ->get();
+
+    $driverNames = DB::table('tracking_data')
+
+        ->select(
+            'driver_id',
+            DB::raw('MAX(driver_name) as driver_name')
+        )
+
+        ->groupBy('driver_id')
+
+        ->pluck('driver_name', 'driver_id');
+
+    $data = $raw->map(function ($row) use ($driverNames) {
+
+        $row->driver_name = $driverNames[$row->driver_id] ?? '-';
+
+        $row->persentase = $row->total_std
+            ? round(($row->berhasil / $row->total_std) * 100, 2)
+            : 0;
+
+        return $row;
+    });
+
+    return view('performance.kurir', compact(
+        'data',
+        'date',
+        'hub',
+        'hubs',
+        'isOwner'
+    ));
 }
 public function live(Request $request)
 {

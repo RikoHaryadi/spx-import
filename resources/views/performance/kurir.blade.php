@@ -6,79 +6,132 @@
     <h4 class="mb-3">Performance Kurir</h4>
 
     {{-- FILTER --}}
-    <form method="GET" action="{{ url('/performance/kurir') }}" class="row g-3 mb-4">
+    <form method="GET"
+          action="{{ url('/performance/kurir') }}"
+          id="filterForm"
+          class="row g-3 mb-4">
 
         <div class="col-md-3">
-            <label>Tanggal</label>
-            <input type="date" name="date" class="form-control"
-                   value="{{ request('date') }}" required>
+            <label class="form-label">Tanggal</label>
+
+            <input type="date"
+                   name="date"
+                   class="form-control"
+                   value="{{ $date }}"
+                   onchange="document.getElementById('filterForm').submit()">
         </div>
 
-        <div class="col-md-3">
-            <label>Hub</label>
-          <select name="hub" class="form-control" required>
-    <option value="">-- Pilih Hub --</option>
+        <div class="col-md-4">
 
-    @foreach($hubs as $h)
-        <option value="{{ $h->lmhub_station_name }}"
-            {{ request('hub') == $h->lmhub_station_name ? 'selected' : '' }}>
-            {{ $h->lmhub_station_name }}
-        </option>
-    @endforeach
+            <label class="form-label">Hub</label>
 
-</select>
-        </div>
+            @if($isOwner)
 
-        <div class="col-md-3 d-flex align-items-end">
-            <button class="btn btn-primary">Tampilkan</button>
+                <select name="hub"
+                        class="form-select"
+                        onchange="document.getElementById('filterForm').submit()">
+
+                    @foreach($hubs as $h)
+
+                        <option value="{{ $h->lmhub_station_name }}"
+                            {{ $hub == $h->lmhub_station_name ? 'selected' : '' }}>
+
+                            {{ $h->lmhub_station_name }}
+
+                        </option>
+
+                    @endforeach
+
+                </select>
+
+            @else
+
+                <input type="text"
+                       class="form-control"
+                       value="{{ $hub }}"
+                       readonly>
+
+                <input type="hidden"
+                       name="hub"
+                       value="{{ $hub }}">
+
+            @endif
+
         </div>
 
     </form>
 
-    {{-- TABLE --}}
-    @if($data && count($data) > 0)
 
-        <div class="card">
+    {{-- TABLE --}}
+    @if($data->count())
+
+        <div class="card shadow-sm">
+
             <div class="card-body table-responsive">
 
-                <table class="table table-bordered">
-                    <thead>
+                <table class="table table-bordered table-hover align-middle">
+
+                    <thead class="table-dark">
+
                         <tr>
+
                             <th>Driver ID</th>
                             <th>Driver Name</th>
-                            <th>Total STD</th>
-                            <th>Berhasil</th>
-                            <th>Tidak Berhasil</th>
-                            <th>%</th>
+                            <th class="text-center">Total STD</th>
+                            <th class="text-center">Berhasil</th>
+                            <th class="text-center">Tidak Berhasil</th>
+                            <th class="text-center">%</th>
+
                         </tr>
+
                     </thead>
 
                     <tbody>
+
                         @foreach($data as $row)
+
                             <tr>
+
                                 <td>{{ $row->driver_id }}</td>
+
                                 <td>{{ $row->driver_name }}</td>
-                                <td>{{ $row->total_std }}</td>
-                                <td>{{ $row->berhasil }}</td>
-                                <td>{{ $row->tidak_berhasil }}</td>
-                                <td>
+
+                                <td class="text-center">{{ $row->total_std }}</td>
+
+                                <td class="text-center">{{ $row->berhasil }}</td>
+
+                                <td class="text-center">{{ $row->tidak_berhasil }}</td>
+
+                                <td class="text-center">
+
                                     <span class="badge bg-{{ $row->persentase >= 90 ? 'success' : 'warning' }}">
+
                                         {{ $row->persentase }}%
+
                                     </span>
+
                                 </td>
+
                             </tr>
+
                         @endforeach
+
                     </tbody>
 
                 </table>
 
             </div>
+
         </div>
 
-    @elseif(request('date') && request('hub'))
+    @else
+
         <div class="alert alert-warning">
-            Data tidak ditemukan
+
+            Tidak ada data untuk tanggal dan hub yang dipilih.
+
         </div>
+
     @endif
 
 </div>
